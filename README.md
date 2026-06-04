@@ -1,8 +1,6 @@
 # SkeneGraph-Net
 
-<!-- After the first Zenodo release, uncomment and fill in the concept DOI:
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
--->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20548973.svg)](https://doi.org/10.5281/zenodo.20548973)
 
 Network-analysis application for TEI/XML-encoded drama, modelled on the
 [DraCor API](https://dracor.org/doc/api) and departing from it on four
