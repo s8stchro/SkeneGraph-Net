@@ -1,7 +1,7 @@
 {
   "upload_type": "software",
   "title": "SkeneGraph-Net: Network analysis for TEI/XML-encoded drama",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "language": "eng",
   "license": "Apache-2.0",
   "creators": [

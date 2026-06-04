@@ -8,7 +8,7 @@ authors:
     email: schronopoulos@gmail.com
     affiliation: "University of Ioannina, Department of Philology"
     orcid: "https://orcid.org/0009-0001-9153-3966"
-version: "1.0.0"
+version: "1.0.1"
 date-released: 2026-06-05
 license: Apache-2.0
 repository-code: "https://github.com/s8stchro/SkeneGraph-Net"

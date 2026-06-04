@@ -4,6 +4,15 @@ All notable changes to SkeneGraph-Net are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] — 2026-06-05
+
+### Removed
+
+- The paper-figure scripts (`figures/`) and the one-off corpus-migration
+  utility (`scripts/`) are no longer shipped — they are auxiliary to the tool
+  and not imported by it. They remain available in the `v1.0.0` git tag. No
+  API change.
+
 ## [1.0.0] — 2026-06-05
 
 First public release.
@@ -29,4 +38,5 @@ First public release.
   HTML file per play / corpus, with an in-app methods panel.
 - **CLI** (`app.py`) — `analyze` (one play) and `corpus` (many) subcommands.
 
+[1.0.1]: https://github.com/s8stchro/SkeneGraph-Net/releases/tag/v1.0.1
 [1.0.0]: https://github.com/s8stchro/SkeneGraph-Net/releases/tag/v1.0.0

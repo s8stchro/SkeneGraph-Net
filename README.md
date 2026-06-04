@@ -50,8 +50,7 @@ pip install -r requirements.txt
 ```
 
 Tested with **Python 3.13, lxml 6.0, networkx 3.5** (floors: lxml ≥ 4.9,
-networkx ≥ 3.0). The figure scripts under `figures/` additionally need
-matplotlib — see [`requirements-figures.txt`](requirements-figures.txt).
+networkx ≥ 3.0).
 
 ## Quickstart
 
@@ -157,8 +156,7 @@ methodological configuration that produced it:
 * `interactive.py`   guided prompt (run `python app.py` with no subcommand)
 * `app.py`           CLI entry point
 
-Pass `--no-dashboard` to skip the HTML generation. Paper-figure scripts live
-under `figures/`; one-off data-migration utilities under `scripts/`.
+Pass `--no-dashboard` to skip the HTML generation.
 
 ## Cite this software
 
