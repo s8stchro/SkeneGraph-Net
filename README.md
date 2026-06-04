@@ -36,9 +36,9 @@ methodological points:
    Gephi-renderable GEXF with `<spells>` describing when each character and
    each edge is active. DraCor publishes the static aggregate only.
 
-The methodological premises behind these choices are set out in
-[`METHODOLOGY.md`](METHODOLOGY.md) and, in full, in the in-app *Methods* panel of
-every dashboard.
+Each of these is a deliberate, exposed choice rather than a hidden default. The
+full methodology — every metric and formula, and the rationale for each model —
+lives in the **Methods & formulas** tab of every generated dashboard.
 
 ## Install
 
