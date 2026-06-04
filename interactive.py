@@ -65,7 +65,7 @@ def _print_header() -> None:
     print()
     print("=" * 60)
     print("  SkeneGraph-Net  --  Interactive Mode")
-    print("  DraCor-style network analysis for Greek drama")
+    print("  Network analysis for TEI/XML-encoded ancient Greek and Latin drama")
     print("=" * 60)
     print("\n  All methodological toggles (mute mode, partOf aggregation,")
     print("  segmentation, edge rule) are exposed in the generated dashboard.")

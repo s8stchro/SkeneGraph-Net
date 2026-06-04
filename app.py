@@ -1,4 +1,4 @@
-"""SkeneGraph-Net -- DraCor-style network analysis for Greek drama.
+"""SkeneGraph-Net -- DraCor-style network analysis for TEI/XML-encoded ancient Greek and Latin drama.
 
 Usage
 -----
@@ -442,8 +442,8 @@ def cmd_corpus(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="SkeneGraph-Net",
-        description="DraCor-style network analysis for Greek drama "
-                    "(mutes, three segmenters, dynamic graphs).",
+        description="DraCor-style network analysis for TEI/XML-encoded ancient "
+                    "Greek and Latin drama (mutes, three segmenters, dynamic graphs).",
     )
     p.add_argument("-v", "--verbose", action="store_true")
     p.add_argument("--version", action="version",

@@ -4,9 +4,9 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
 -->
 
-Network-analysis application for TEI-encoded ancient Greek drama, modelled on
-the [DraCor API](https://dracor.org/doc/api) and departing from it on four
-methodological points:
+Network-analysis application for TEI/XML-encoded ancient Greek and Latin drama,
+modelled on the [DraCor API](https://dracor.org/doc/api) and departing from it
+on four methodological points:
 
 1. **Three segmentation methods** (DraCor uses one):
    * `sd`   — stage directions: a new segment opens after every `<move>`
