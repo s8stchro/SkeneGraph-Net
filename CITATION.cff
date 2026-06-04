@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "SkeneGraph-Net: Network analysis for TEI/XML-encoded ancient Greek and Latin drama"
+title: "SkeneGraph-Net: Network analysis for TEI/XML-encoded drama"
 message: "If you use this software, please cite it as below."
 type: software
 authors:
@@ -15,8 +15,8 @@ repository-code: "https://github.com/s8stchro/SkeneGraph-Net"
 url: "https://github.com/s8stchro/SkeneGraph-Net"
 # doi: "10.5281/zenodo.XXXXXXX"   # TODO: add the Zenodo concept DOI after the first release
 abstract: >-
-  SkeneGraph-Net is a network-analysis application for TEI/XML-encoded ancient
-  Greek and Latin drama, modelled on the DraCor API and departing from it on four
+  SkeneGraph-Net is a network-analysis application for TEI/XML-encoded drama,
+  modelled on the DraCor API and departing from it on four
   methodological axes.  (1) Three segmentation methods — stage directions
   (a new segment after every <move>), div3 (the scene level), and div2 (the
   act / macro-structure level) — instead of DraCor's single scene-based
@@ -33,7 +33,6 @@ abstract: >-
 keywords:
   - TEI
   - Greek drama
-  - Latin drama
   - Aristophanes
   - network analysis
   - computational philology

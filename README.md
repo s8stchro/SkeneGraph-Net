@@ -4,9 +4,9 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
 -->
 
-Network-analysis application for TEI/XML-encoded ancient Greek and Latin drama,
-modelled on the [DraCor API](https://dracor.org/doc/api) and departing from it
-on four methodological points:
+Network-analysis application for TEI/XML-encoded drama, modelled on the
+[DraCor API](https://dracor.org/doc/api) and departing from it on four
+methodological points:
 
 1. **Three segmentation methods** (DraCor uses one):
    * `sd`   — stage directions: a new segment opens after every `<move>`
@@ -35,6 +35,11 @@ on four methodological points:
 4. **Dynamic graph** produced alongside the static one and packaged as a
    Gephi-renderable GEXF with `<spells>` describing when each character and
    each edge is active. DraCor publishes the static aggregate only.
+
+Input is TEI/XML in the TEI-compatible **SkeneGraph schema** (stage directions
+as `<move>`, the `div2` / `div3` hierarchy, and `partOf` relations for collective
+figures); arbitrary TEI may need adapting first. The tool itself is
+language-agnostic — it has so far been exercised on ancient Greek drama.
 
 Each of these is a deliberate, exposed choice rather than a hidden default. The
 full methodology — every metric and formula, and the rationale for each model —
