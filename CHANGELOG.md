@@ -29,4 +29,4 @@ First public release.
   HTML file per play / corpus, with an in-app methods panel.
 - **CLI** (`app.py`) — `analyze` (one play) and `corpus` (many) subcommands.
 
-[1.0.0]: https://github.com/USERNAME/SkeneGraph-Net/releases/tag/v1.0.0
+[1.0.0]: https://github.com/s8stchro/SkeneGraph-Net/releases/tag/v1.0.0

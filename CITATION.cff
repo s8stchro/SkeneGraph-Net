@@ -6,14 +6,14 @@ authors:
   - given-names: Stylianos
     family-names: Chronopoulos
     email: schronopoulos@gmail.com
-    # affiliation: ""                                  # TODO: add affiliation before submitting to Zenodo
-    # orcid: "https://orcid.org/0000-0000-0000-0000"   # TODO: add ORCID before submitting to Zenodo
+    affiliation: "University of Ioannina, Department of Philology"
+    orcid: "https://orcid.org/0009-0001-9153-3966"
 version: "1.0.0"
 date-released: 2026-06-01
 license: Apache-2.0
-# repository-code: "https://github.com/USERNAME/SkeneGraph-Net"  # TODO: set once the GitHub repo exists
-# url:             "https://github.com/USERNAME/SkeneGraph-Net"  # TODO: same
-# doi:             "10.5281/zenodo.XXXXXXX"                       # TODO: add the Zenodo concept DOI after the first release
+repository-code: "https://github.com/s8stchro/SkeneGraph-Net"
+url: "https://github.com/s8stchro/SkeneGraph-Net"
+# doi: "10.5281/zenodo.XXXXXXX"   # TODO: add the Zenodo concept DOI after the first release
 abstract: >-
   SkeneGraph-Net is a TEI-based network-analysis application for ancient
   Greek drama, modelled on the DraCor API and departing from it on four

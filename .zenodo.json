@@ -6,7 +6,9 @@
   "license": "Apache-2.0",
   "creators": [
     {
-      "name": "Chronopoulos, Stylianos"
+      "name": "Chronopoulos, Stylianos",
+      "affiliation": "University of Ioannina, Department of Philology",
+      "orcid": "0009-0001-9153-3966"
     }
   ],
   "description": "SkeneGraph-Net is a TEI-based network-analysis application for ancient Greek drama, modelled on the DraCor API and departing from it on four methodological axes. (1) Three segmentation methods &mdash; stage directions (a new segment after every stage-direction element), div3 (the scene level), and div2 (the act / macro-structure level) &mdash; instead of DraCor's single scene-based segmentation. (2) Three network models spanning two orthogonal axes: the cast filter (whether play-level mute characters are admitted as nodes) and the edge rule (co-presence on stage versus co-speech within a segment), yielding stage co-presence, dialogic cast at play level, and dialogic cast at segment level. (3) Optional aggregation of collective figures &mdash; the chorus and its subdivisions &mdash; into a single node, or their treatment as distinct nodes. (4) A per-segment dynamic graph, exported as a Gephi-renderable GEXF with temporal spells, alongside the static aggregate. Each methodological choice is exposed explicitly in the accompanying dashboards to support data-assisted &mdash; rather than data-driven &mdash; philological reading.",
