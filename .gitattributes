@@ -1,0 +1,11 @@
+# Normalize line endings: store text as LF in the repository, check out native.
+* text=auto
+
+*.py   text
+*.md   text
+*.txt  text
+*.cff  text
+*.json text
+*.xml  text diff
+*.csv  text
+LICENSE text

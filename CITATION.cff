@@ -1,0 +1,69 @@
+cff-version: 1.2.0
+title: "SkeneGraph-Net: TEI-based network analysis for Greek drama"
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - given-names: Stylianos
+    family-names: Chronopoulos
+    email: schronopoulos@gmail.com
+    # affiliation: ""                                  # TODO: add affiliation before submitting to Zenodo
+    # orcid: "https://orcid.org/0000-0000-0000-0000"   # TODO: add ORCID before submitting to Zenodo
+version: "1.0.0"
+date-released: 2026-06-01
+license: Apache-2.0
+# repository-code: "https://github.com/USERNAME/SkeneGraph-Net"  # TODO: set once the GitHub repo exists
+# url:             "https://github.com/USERNAME/SkeneGraph-Net"  # TODO: same
+# doi:             "10.5281/zenodo.XXXXXXX"                       # TODO: add the Zenodo concept DOI after the first release
+abstract: >-
+  SkeneGraph-Net is a TEI-based network-analysis application for ancient
+  Greek drama, modelled on the DraCor API and departing from it on four
+  methodological axes.  (1) Three segmentation methods — stage directions
+  (a new segment after every <move>), div3 (the scene level), and div2 (the
+  act / macro-structure level) — instead of DraCor's single scene-based
+  segmentation.  (2) Three network models spanning two orthogonal axes: the
+  cast filter (whether play-level mute characters are admitted as nodes) and
+  the edge rule (co-presence on stage versus co-speech within a segment),
+  yielding stage co-presence, dialogic cast at play level, and dialogic cast
+  at segment level.  (3) Optional aggregation of collective figures — the
+  chorus and its subdivisions — into a single node, or their treatment as
+  distinct nodes.  (4) A per-segment dynamic graph, exported as a
+  Gephi-renderable GEXF with <spells>, alongside the static aggregate.  Each
+  methodological choice is exposed explicitly in the accompanying dashboards
+  to support data-assisted — rather than data-driven — philological reading.
+keywords:
+  - TEI
+  - Greek drama
+  - Aristophanes
+  - network analysis
+  - computational philology
+  - digital humanities
+  - co-presence networks
+  - co-speech networks
+  - dynamic networks
+  - DraCor
+  - data-assisted reading
+references:
+  - type: software
+    title: "DraCor: Drama Corpora Project"
+    authors:
+      - given-names: Frank
+        family-names: Fischer
+      - given-names: Peer
+        family-names: Trilcke
+    url: "https://dracor.org"
+  - type: article
+    title: >-
+      Dramatic structure and historical change in 50 years of German-language
+      plays
+    authors:
+      - given-names: Peer
+        family-names: Trilcke
+      - given-names: Frank
+        family-names: Fischer
+      - given-names: Mathias
+        family-names: Goebel
+      - given-names: Dario
+        family-names: Kampkaspar
+    year: 2017
+    conference:
+      name: "Digital Humanities 2017"
