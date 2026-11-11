@@ -8,8 +8,8 @@ authors:
     email: schronopoulos@gmail.com
     affiliation: "University of Ioannina, Department of Philology"
     orcid: "https://orcid.org/0009-0001-9153-3966"
-version: "1.0.1"
-date-released: 2026-06-05
+version: "2.0.0"
+date-released: 2026-11-11
 license: Apache-2.0
 repository-code: "https://github.com/s8stchro/SkeneGraph-Net"
 url: "https://github.com/s8stchro/SkeneGraph-Net"
@@ -18,17 +18,24 @@ identifiers:
   - type: doi
     value: "10.5281/zenodo.20549212"
     description: "Version DOI for the v1.0.1 release"
+  # The v2.0.0 version DOI is minted when the release is deposited on Zenodo;
+  # add it here as a further `- type: doi` identifier at that point. Until
+  # then the concept DOI above (10.5281/zenodo.20548973) resolves to the
+  # latest published version.
 abstract: >-
   SkeneGraph-Net is a network-analysis application for TEI/XML-encoded drama,
   modelled on the DraCor API and departing from it on four
   methodological axes.  (1) Three segmentation methods — stage directions
-  (a new segment after every <move>), div3 (the scene level), and div2 (the
-  act / macro-structure level) — instead of DraCor's single scene-based
+  (a new segment after every <move>), middle sequences (the scene level), and large
+  sequences (the act / macro-structure level) — instead of DraCor's single scene-based
   segmentation.  (2) Three network models spanning two orthogonal axes: the
-  cast filter (whether play-level mute characters are admitted as nodes) and
-  the edge rule (co-presence on stage versus co-speech within a segment),
-  yielding stage co-presence, dialogic cast at play level, and dialogic cast
-  at segment level.  (3) Optional aggregation of collective figures — the
+  node set (whether play-level mute characters are admitted) and the segment
+  cast (whether a character counts as being in a segment by standing on stage
+  in it or by speaking in it), yielding stage co-presence, dialogic cast at
+  play level, and dialogic cast at segment level.  All three are undirected
+  co-occurrence networks: an edge records that two characters shared a
+  segment, never that one addressed the other, and addressee annotation takes
+  no part in them.  (3) Optional aggregation of collective figures — the
   chorus and its subdivisions — into a single node, or their treatment as
   distinct nodes.  (4) A per-segment dynamic graph, exported as a
   Gephi-renderable GEXF with <spells>, alongside the static aggregate.  Each
@@ -42,7 +49,7 @@ keywords:
   - computational philology
   - digital humanities
   - co-presence networks
-  - co-speech networks
+  - co-occurrence networks
   - dynamic networks
   - DraCor
   - data-assisted reading

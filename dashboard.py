@@ -2,7 +2,7 @@
 
 The dashboard bundles results from all chosen segmentations into a single
 HTML file that opens directly in any browser (no server needed).  The
-segmentation tabs switch the view between `sd`, `div2`, `div3`.
+segmentation tabs switch the view between `sd`, `large_seq`, `middle_seq`.
 
 Layout
 ------
@@ -21,8 +21,9 @@ Layout
    │ Character table          │ Segment table                │
    └─────────────────────────────────────────────────────────┘
 
-D3 v7 is loaded from a CDN.  All play data is embedded as a JSON literal,
-so the file is fully self-contained beyond that one CDN script.
+D3 and KaTeX are inlined from `vendor/` (see vendor_assets.py) and all play
+data is embedded as a JSON literal, so the file is fully self-contained and
+opens offline.
 
 The "drama-change rate" follows Fischer/Göbel/Kampkaspar/Kittel/Trilcke,
 "Network Dynamics, Plot Analysis", DH2017.  At each transition between
@@ -44,9 +45,13 @@ from typing import Dict, List, Optional
 
 import networkx as nx
 
+from aggregation import aggregatable_groups
 from parser import PlayData
 from segmentation import Segment
+from figure_export import (CSS_PLACEHOLDER, JS_PLACEHOLDER,
+                           figure_export_css, figure_export_js)
 from methods_content import methods_panel_html
+from vendor_assets import PLACEHOLDER as VENDOR_PLACEHOLDER, vendor_assets_html
 
 
 def _edges_payload(G: nx.Graph) -> List[Dict]:
@@ -69,8 +74,9 @@ def _segments_payload(segments: List[Segment]) -> List[Dict]:
     for s in segments:
         lines: List[int] = []
         for m in s.trigger_moves:
-            if m.source_line:
-                lines.append(m.source_line)
+            ln = m.stage_line or m.source_line   # start at the enclosing <stage>, not the <move>
+            if ln:
+                lines.append(ln)
         for sp in s.speeches:
             if sp.source_line:
                 lines.append(sp.source_line)
@@ -94,41 +100,44 @@ def _segments_payload(segments: List[Segment]) -> List[Dict]:
                 end = max(tail) if tail else start
         speakers = sorted(s.speakers)
         silent = sorted(s.silent_present)
-        # Per-segment word / verse counts attributed to each speaker (sum
-        # over the segment's non-empty speeches, full count credited to
-        # every id in @who).  words_by_speaker drives the dynamic-graph
-        # node-size encoding (log-scaled); verses_by_speaker drives the
-        # character x segment heatmap cell intensity.  Empty placeholder
-        # <sp><l/></sp> speeches contribute zero to both and are skipped.
+        # Per-segment word counts attributed to each speaker (sum over the
+        # segment's non-empty speeches, full count credited to every id in
+        # @who).  words_by_speaker drives the dynamic-graph node-size
+        # encoding (log-scaled) and the character x segment heatmap cell
+        # intensity.  Empty placeholder <sp><l/></sp> speeches contribute
+        # zero and are skipped.
         words_by_speaker: Dict[str, int] = {}
-        verses_by_speaker: Dict[str, int] = {}
         for sp in s.speeches:
             if sp.word_count <= 0:
                 continue
             for cid in sp.who:
                 words_by_speaker[cid] = words_by_speaker.get(cid, 0) + sp.word_count
-                verses_by_speaker[cid] = verses_by_speaker.get(cid, 0) + sp.verse_count
         payloads.append({
             "id": s.id,
             "label": s.label,
-            "div2_n": s.div2_n,
-            "div2_type": s.div2_type,
-            "div3_id": s.div3_id,
-            "div3_n": s.div3_n,
+            "large_seq_id": s.large_seq_id,
+            "large_seq_type": s.large_seq_type,
+            "middle_seq_id": s.middle_seq_id,
             "is_initial": s.is_initial,
             "is_final": s.is_final,
             # `characters` = stage-present cast (used by mutes-in view).
-            # `speakers` = subset with >=1 non-empty <l> in this segment
-            # (used by mutes-out view; the others are shown as silent).
+            # `speakers` = the subset this segment attributes an utterance to
+            # (`Segment.speakers`: the <sp>, not the word count, so a speech
+            # whose text is lost still credits its speaker).  This is the cast
+            # the segment-level model draws its edges and its plot-dynamics
+            # indices from; the rest are shown as silent.
             "characters": sorted(s.characters_present),
             "speakers": speakers,
             "silent_present": silent,
             "words_by_speaker": words_by_speaker,
-            "verses_by_speaker": verses_by_speaker,
-            "verse_count": s.verse_count,
             "word_count": s.word_count,
-            # Non-empty speeches only (placeholder <sp><l/></sp> excluded).
-            "num_speeches": sum(1 for sp in s.speeches if sp.word_count > 0),
+            # Every <sp>, including one whose text is lost: such a speech
+            # happened, and counting it is what lets a XOPOY interlude read
+            # "1 speech, 0 words" instead of an empty segment.
+            "num_speeches": len(s.speeches),
+            # Zero-duration round trips (move type="crossing") inside the
+            # segment: stage traffic deliberately absent from the graph.
+            "num_crossings": s.num_crossings,
             "tei_start": start,
             "tei_end":   end,
         })
@@ -148,20 +157,27 @@ def _character_payload(play: PlayData, static_g: nx.Graph, metrics: Dict) -> Lis
             "is_collective": ch.is_collective,
             "is_chorus": ch.is_chorus,
             "sex": ch.sex or "",
+            # The collectives this character is a part of: the per-segment
+            # cliques drawn in the browser skip a part and its whole, as
+            # network._pairs does for every exported graph.
+            "part_of": sorted(ch.part_of),
             "in_network": static_g.has_node(cid),
             "degree": (m["degree"] if m else 0),
             "weightedDegree": (m["weightedDegree"] if m else 0),
             "betweenness": (m["betweenness"] if m else 0.0),
             "closeness": (m["closeness"] if m else 0.0),
             "eigenvector": (m["eigenvector"] if m else 0.0),
+            "clustering":  (m.get("clustering", 0.0) if m else 0.0),
+            "triangles":   (m.get("triangles", 0) if m else 0),
             # Speech-time fields populated by compute_temporal_gini in
             # app.py; missing on pure mutes and on listPerson entries
             # who never speak.  Rendered in the per-character "speech
             # concentration" panel inside Plot Dynamics, not in the
             # centralities table.
-            "total_verses":      (m.get("total_verses")      if m else None),
-            "speaking_segments": (m.get("speaking_segments") if m else None),
-            "temporal_gini":     (m.get("temporal_gini")     if m else None),
+            "total_words":        (m.get("total_words")        if m else None),
+            "speaking_segments":  (m.get("speaking_segments")  if m else None),
+            "n_onstage_segments": (m.get("n_onstage_segments") if m else None),
+            "temporal_gini":      (m.get("temporal_gini")      if m else None),
         })
     rows.sort(key=lambda r: (-r["degree"], r["id"]))
     return rows
@@ -185,6 +201,11 @@ def build_dashboard_payload(
                 {"name": r.name, "active": r.active, "passive": r.passive}
                 for r in play.relations if r.name == "partOf"
             ],
+            # The groups the writer generated variants for.  The checkboxes
+            # are drawn from this rather than from the relations above, so a
+            # box cannot name a combination that was never built -- which
+            # the view would have had to resolve by showing some other one.
+            "aggregate_groups": aggregatable_groups(play),
         },
         # Raw TEI source for the new "TEI source" view tab.  Larger than the
         # rest of the payload combined for Aristophanic plays (~300-500 KB
@@ -229,10 +250,7 @@ _TEMPLATE = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <title>{title} - SkeneGraph-Net</title>
-<script src="https://d3js.org/d3.v7.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<!--VENDOR_ASSETS-->
 <style>
 :root {{
   --bg: #fafafa; --panel: #ffffff; --border: #e0e0e0;
@@ -344,7 +362,7 @@ main {{ padding: 12px 16px; }}
 .tei-line.highlight.first .content {{ border-left: 3px solid #d4a200;
   padding-left: 5px; }}
 .tei-source-empty {{ padding: 16px; color: var(--muted); font-style: italic; }}
-/* The segmentation tabs row (Stage directions / div2 / div3) and the
+/* The segmentation tabs row (Stage directions / large-seq / middle-seq) and the
    toggles pin just below the topbar.  `--topbar-h` is measured in JS on
    load and on resize.  Only takes effect inside the Analysis view; when
    that view is `.hidden`, the element doesn't render so sticky is moot. */
@@ -387,12 +405,12 @@ main {{ padding: 12px 16px; }}
 .metric-section h4 .caveat {{ display: block; font-weight: 400;
   text-transform: none; letter-spacing: 0; font-style: italic;
   color: #aaa; font-size: 10.5px; margin: 2px 0 0 0; }}
-/* Structural metrics now live inside the Headline section as a greyed
-   sub-group, not their own section.  Apply the demoted styling at the
-   item level. */
-.metrics-list .item.structural dt,
-.metrics-list .item.structural dd,
-.metrics-list .item.structural dd .primary {{ color: #888; font-weight: 500; }}
+/* Diameter, path length, clustering and component count were once greyed
+   here as a demoted sub-group.  They are exact values on the graph shown,
+   not estimates, and greying reads as a warning about their truth rather
+   than about their resolution -- which also invited the reader to discount
+   the metrics beside them.  What is worth saying about them is said in the
+   section footnote and in Methods 1, not in the colour. */
 .metric-section .section-footnote {{ font-size: 11px; font-style: italic;
   color: #aaa; margin: 10px 0 0 0; padding: 6px 4px 0 4px;
   border-top: 1px dotted #e0e0e0; }}
@@ -434,7 +452,7 @@ main {{ padding: 12px 16px; }}
 #static-graph {{ width: 100%; height: 800px; cursor: grab; }}
 #static-graph:active {{ cursor: grabbing; }}
 /* Dynamic graph: narrower than the static panel (per-segment graphs have
-   far fewer nodes and don't need the full width).  The verse-proportional
+   far fewer nodes and don't need the full width).  The word-proportional
    timeline below it spans the same max-width so the two align visually. */
 #dynamic-graph {{ width: 100%; max-width: 820px; height: 460px;
   display: block; margin: 0 auto; }}
@@ -463,6 +481,14 @@ main {{ padding: 12px 16px; }}
   height: calc(100vh - 140px); }}
 .panel.graph.heatmap-fullscreen #character-segment-heatmap {{
   width: 100%; height: calc(100vh - 300px); }}
+.panel.size-fullscreen,
+.panel.word-fullscreen,
+.panel.beat-fullscreen {{ position: fixed; inset: 0; z-index: 1000;
+  margin: 0; padding: 16px 24px; background: var(--panel);
+  overflow: auto; max-width: none; }}
+.panel.size-fullscreen #size-chart,
+.panel.word-fullscreen #word-chart {{ height: calc(100vh - 120px); }}
+.panel.beat-fullscreen #beat-chart {{ height: calc(100vh - 150px); }}
 /* In fullscreen, the cell-composition summary needs to remain visible
    under the heatmap (the heatmap itself shrinks to leave room).  Also
    bump the font slightly so the percentages read on a projector. */
@@ -476,8 +502,9 @@ main {{ padding: 12px 16px; }}
 
 /* Character x segment heatmap.  Each cell is one (character, segment)
    pair: transparent = absent, light grey = present but silent in
-   segment, white-to-red ramp = speaking (intensity proportional to
-   verses).  Click a cell to scrub the dynamic graph to that segment. */
+   segment, red hatch = speaks but the text is not transmitted,
+   pale-to-dark red ramp = speaking (intensity rising with words).
+   Click a cell to scrub the dynamic graph to that segment. */
 #character-segment-heatmap {{ width: 100%; height: 480px; display: block; }}
 #character-segment-heatmap rect.cell {{ cursor: pointer; }}
 #character-segment-heatmap rect.cell:hover {{ stroke: var(--accent);
@@ -501,8 +528,8 @@ main {{ padding: 12px 16px; }}
 #character-segment-heatmap .axis-label {{ font-size: 10px; fill: var(--muted); }}
 /* Cell-composition summary panel beneath the heatmap.  Two grouped blocks
    in a flex row: cell counts (with red / grey / empty + gray:red ratio)
-   and the would-be edge counts under both readings (co-presence rule and
-   co-speech rule).  Updates on every heatmap re-render so it follows the
+   and the would-be edge counts under both readings (on-stage cast and
+   speaking cast).  Updates on every heatmap re-render so it follows the
    mute-mode radio and the partOf aggregation toggle. */
 .heatmap-stats {{ margin: 8px 0 0; padding: 10px 14px;
   background: #f7f7f5; border: 1px solid var(--border);
@@ -528,7 +555,8 @@ main {{ padding: 12px 16px; }}
 .heatmap-controls select {{ font-size: 12px; padding: 2px 6px;
   border: 1px solid var(--border); border-radius: 3px; background: white;
   font-family: inherit; margin-left: 6px; }}
-#size-chart, #verse-chart, #beat-chart {{ width: 100%; height: 240px; }}
+#size-chart, #word-chart, #beat-chart {{ width: 100%; height: 240px; }}
+#beat-chart circle.beat-hit:hover {{ fill: rgba(183, 55, 121, 0.12); }}
 .controls {{ display: flex; gap: 8px; align-items: center; padding: 8px 12px;
   background: var(--panel); border: 1px solid var(--border); border-radius: 4px;
   margin-bottom: 12px; flex-wrap: wrap; }}
@@ -583,17 +611,27 @@ text {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   display: flex; gap: 12px; flex-wrap: wrap; }}
 .legend span.swatch {{ display: inline-block; width: 10px; height: 10px;
   border-radius: 50%; vertical-align: middle; margin-right: 3px; }}
+/* The heatmap's key: square swatches painted as its cells are -- grey for a
+   silent presence, the cells' own hatch where the text is not transmitted,
+   the cells' own ramp for words. */
+.legend span.swatch-silent {{ border-radius: 2px; background: #bbbbbb; }}
+.legend span.swatch-hatch {{ border-radius: 2px;
+  background: repeating-linear-gradient(45deg, #a50f15 0 1.5px,
+                                        #fde0dd 1.5px 4px); }}
+.legend span.swatch-ramp {{ border-radius: 2px; width: 50px;
+  background: linear-gradient(to right, #fcbba1, #a50f15); }}
 .zoom-hint {{ font-size: 11px; color: #999; }}
 </style>
+<!--FIGURE_EXPORT_CSS-->
 </head>
 <body>
 <div class="topbar">
 <header>
   <h1>{title}</h1>
   <div class="sub">{subtitle}</div>
-  <div class="departures">DraCor model + departures: <b>three segmentations</b>
-     (sd / div2 / div3) &middot; <b>per-segment co-speech edges</b> alongside the
-     stage-presence model (toggleable) &middot; <b>dynamic graph</b> alongside static</div>
+  <div class="departures">Model: <b>three segmentations</b>
+     (sd / large-seq / middle-seq) &middot; <b>per-segment speaking cast</b> alongside the
+     stage-presence cast (toggleable) &middot; <b>dynamic graph</b> alongside static</div>
   <div class="active-filters" id="active-filters"></div>
 </header>
 <nav class="view-tabs">
@@ -607,14 +645,14 @@ text {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
     <div class="toggles">
       <fieldset class="mute-mode-radio">
         <legend>Network model:</legend>
-        <label><input type="radio" name="mute-mode" value="stage" checked>
+        <label><input type="radio" name="mute-mode" value="full" checked>
           stage co-presence
           <span class="detail">(all on-stage characters as nodes)</span></label>
-        <label><input type="radio" name="mute-mode" value="dialogic">
-          dialogic cast on play level
+        <label><input type="radio" name="mute-mode" value="p-speaking">
+          speaking cast on play level
           <span class="detail">(drop play-level mutes)</span></label>
-        <label><input type="radio" name="mute-mode" value="cospeech">
-          dialogic cast on segment level
+        <label><input type="radio" name="mute-mode" value="s-speaking">
+          speaking cast on segment level
           <span class="detail">(only segment-active speakers)</span></label>
       </fieldset>
       <label><input type="checkbox" id="show-labels" checked> show labels</label>
@@ -622,7 +660,7 @@ text {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
     </div>
   </div>
 
-  <div class="panel">
+  <div class="panel" data-comparison-export>
     <h3>Network metrics</h3>
     <div id="kpis"></div>
   </div>
@@ -631,7 +669,7 @@ text {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
     <h3>Speech concentration per character
       <span class="hint">plot-dynamics companion to the play-level Gini &middot;
         steady vs burst speech distribution &middot;
-        threshold &ge; 5 verses; click a row to scrub to that character's loudest segment</span>
+        threshold &ge; 40 words; click a row to scrub to that character's loudest segment</span>
     </h3>
     <div class="scroll" style="max-height: 360px;">
       <table id="tgini-table"></table>
@@ -666,7 +704,7 @@ text {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
     </div>
     <svg id="static-graph"></svg>
     <div class="legend">
-      <span><span class="swatch" style="background: var(--speaker)"></span>speaker</span>
+      <span><span class="swatch" style="background: var(--speaker)"></span>individual</span>
       <span><span class="swatch" style="background: var(--mute)"></span>mute</span>
       <span><span class="swatch" style="background: var(--chorus)"></span>chorus</span>
       <span><span class="swatch" style="background: var(--collective)"></span>collective</span>
@@ -675,22 +713,32 @@ text {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   </div>
 
   <div class="row charts">
-    <div class="panel" style="margin-bottom: 0;">
+    <div class="panel" id="size-panel" style="margin-bottom: 0;">
       <h3>Order over segments
+        <button class="fullscreen-toggle" id="size-fullscreen-btn"
+                title="Toggle fullscreen (Esc to exit)">&#x26F6; fullscreen</button>
         <span class="hint">characters present per segment</span>
       </h3>
       <svg id="size-chart"></svg>
     </div>
-    <div class="panel" style="margin-bottom: 0;">
-      <h3>Verses over segments
-        <span class="hint">verse lines spoken per segment</span>
+    <div class="panel" id="word-panel" style="margin-bottom: 0;">
+      <h3>Words over segments
+        <button class="fullscreen-toggle" id="word-fullscreen-btn"
+                title="Toggle fullscreen (Esc to exit)">&#x26F6; fullscreen</button>
+        <span class="hint">words spoken per segment</span>
       </h3>
-      <svg id="verse-chart"></svg>
+      <svg id="word-chart"></svg>
     </div>
-    <div class="panel" style="margin-bottom: 0;">
+    <div class="panel" id="beat-panel" style="margin-bottom: 0;">
       <h3>Beat chart (drama-change rate)
-        <span class="hint">Trilcke / Fischer et al. 2017 &middot; |S_i &Delta; S_{{i+1}}| / |S_i &cup; S_{{i+1}}|</span>
+        <button class="fullscreen-toggle" id="beat-fullscreen-btn"
+                title="Toggle fullscreen (Esc to exit)">&#x26F6; fullscreen</button>
+        <span class="hint">Fischer et al. 2017 &middot; |S_i &Delta; S_{{i+1}}| / |S_i &cup; S_{{i+1}}|</span>
       </h3>
+      <label style="font-size:11px; color:var(--muted); display:flex; align-items:center; gap:6px; cursor:pointer; margin: -2px 0 4px;">
+        <input type="checkbox" id="chart-xmode"> space x-axis by word position
+        <span style="opacity:0.8;">(transitions placed at their stage-time, not evenly)</span>
+      </label>
       <svg id="beat-chart"></svg>
     </div>
   </div>
@@ -699,12 +747,12 @@ text {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
     <h3>Dynamic network (per segment)
       <button class="fullscreen-toggle" id="dyn-fullscreen-btn"
               title="Toggle fullscreen (Esc to exit)">&#x26F6; fullscreen</button>
-      <span class="hint">click a segment on the timeline below, use &lt; / &gt; / play, or click a segment row in the table</span>
+      <span class="hint">click a segment on the timeline, a beat-chart node, or a table row; use &lt; / &gt; / play</span>
     </h3>
     <!-- Controls live inside the dynamic panel so they go fullscreen
          along with it.  The hidden seg-slider keeps the existing
          updateSlider() wiring functional; the visible scrubber is the
-         verse-proportional #segment-timeline. -->
+         word-proportional #segment-timeline. -->
     <div class="controls">
       <button id="seg-prev">&lt;</button>
       <button id="seg-play">play</button>
@@ -725,18 +773,29 @@ text {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
     <h3>Character &times; segment heatmap
       <button class="fullscreen-toggle" id="heatmap-fullscreen-btn"
               title="Toggle fullscreen (Esc to exit)">&#x26F6; fullscreen</button>
-      <span class="hint">grey = present but silent &middot; red ramp = verses spoken per segment &middot; click a cell to jump</span>
+      <span class="hint">click a cell to jump to its segment</span>
     </h3>
     <div class="heatmap-controls">
       <label>row order
         <select id="heatmap-sort">
           <option value="loudest" selected>loudest first (default)</option>
           <option value="appearance">appearance order</option>
+          <option value="mobility">most stage entrances/exits</option>
           <option value="alphabetical">alphabetical</option>
         </select>
       </label>
     </div>
     <svg id="character-segment-heatmap"></svg>
+    <!-- The cells' four states as a key, so the chart carries its own
+         reading and an exported figure carries it too; it was prose in the
+         heading, which no figure takes with it. -->
+    <div class="legend">
+      <span><span class="swatch swatch-silent" data-swatch="solid"></span>present, silent</span>
+      <span><span class="swatch swatch-hatch" data-swatch="hatch"
+                  data-colors="#a50f15 #fde0dd"></span>performs, text not transmitted</span>
+      <span><span class="swatch swatch-ramp" data-swatch="ramp"
+                  data-colors="#fcbba1 #a50f15"></span>speaking (words, &radic; scale)</span>
+    </div>
     <div id="heatmap-stats" class="heatmap-stats"></div>
   </div>
 
@@ -784,7 +843,7 @@ const FORCE_DEFAULTS = {{ repulsion: 340, link: 90, gravity: 0.05 }};
 // Canonical tab order; defaults to "sd" when present.  JSON keys are
 // alphabetised (sort_keys=True for byte-stable output) so we cannot rely on
 // insertion order from Object.keys().
-const MODE_ORDER = ["sd", "div2", "div3"];
+const MODE_ORDER = ["sd", "large-seq", "middle-seq"];
 const AVAILABLE_MODES = MODE_ORDER.filter(m => m in DATA.segmentations)
   .concat(Object.keys(DATA.segmentations).filter(m => MODE_ORDER.indexOf(m) === -1));
 
@@ -792,17 +851,23 @@ const STATE = {{
   seg: AVAILABLE_MODES[0] || "sd",
   segmentIdx: -1,    // -1 means "static aggregate"
   // Three-state network model.  Replaces the older binary showMutes.
-  // Mapping to the underlying (include_mutes, edge_rule) axes:
-  //   "stage"    -> (True,  presence) -- all on-stage characters as nodes,
+  // Mapping to the underlying (include_mutes, segment_cast) axes:
+  //   "full"       -> (True,  stage) -- all on-stage characters as nodes,
   //                  per-segment co-presence edges (default)
-  //   "dialogic" -> (False, presence) -- drop play-level mute characters
+  //   "p-speaking" -> (False, stage) -- drop play-level mute characters
   //                  from the node set, edges still per-segment co-presence
-  //   "cospeech" -> (False, co_speech) -- speakers-only cast, per-segment
-  //                  co-speech edges
+  //   "s-speaking" -> (False, speaking) -- speakers-only cast; a character
+  //                  counts as in a segment only by speaking in it
   // The first axis answers "who counts as a node?" (play level), the
   // second answers "what makes an edge?" (segment level).  See methods §0.
-  muteMode: "stage",
+  muteMode: "full",
   showLabels: true,
+  // X-axis mode for the beat chart.
+  //   "segment" -> equal-width segment index (default)
+  //   "word"   -> transitions placed at their cumulative word position
+  //                (stage-time), so doorway flurries collapse and turnover
+  //                between long scenes stands alone.
+  chartXMode: "segment",
   // Set of group ids (the `passive` side of partOf relations) currently
   // being aggregated.  Empty = raw view.  One entry per checked group.
   aggregateGroups: new Set(),
@@ -818,14 +883,11 @@ const STATE = {{
   focusNode: null,        // id of the character whose ego-network is highlighted
 }};
 
-// Sorted list of distinct partOf groups (`passive` ids) declared by the
-// play.  One checkbox per entry is rendered in the toolbar.  Empty list
-// => the toolbar shows no aggregation control at all.
-const AGGREGATE_GROUPS = (function() {{
-  const rels = (DATA.play && DATA.play.relations) || [];
-  const set = new Set(rels.filter(r => r.name === "partOf").map(r => r.passive));
-  return Array.from(set).sort();
-}})();
+// The groups this dashboard actually carries variants for, as the writer
+// enumerated them.  One checkbox per entry in the toolbar; an empty list
+// means no aggregation control at all.  Derived from the payload rather
+// than from the relations, so every box has a block behind it.
+const AGGREGATE_GROUPS = ((DATA.play && DATA.play.aggregate_groups) || []).slice();
 
 // Click-to-focus on a static-graph node: dim everything except that node,
 // its direct neighbours, and the edges connecting them.  The focus state
@@ -905,6 +967,11 @@ function fmt(v, dp=4) {{
   if (Number.isInteger(v)) return v.toLocaleString();
   return v.toFixed(dp);
 }}
+// Node fill, same categories as the role chips and in the same precedence:
+// muteness first, so a silent crowd reads grey rather than blue, then the
+// collectivity of the rest.  `--speaker` is the palette's name for the
+// fourth colour, which the legend calls "individual"; the variable is also
+// used for unrelated chart series, hence the mismatch.
 function nodeColor(c) {{
   if (c.is_mute) return "var(--mute)";
   if (c.is_chorus) return "var(--chorus)";
@@ -915,31 +982,136 @@ function nodeColor(c) {{
 // for the active-filters chip strip, segment-table headers, and any
 // hint text that needs to mention the current network model.
 const MUTE_MODE_LABELS = {{
-  stage:    {{ label: "stage co-presence",
-               detail: "all on-stage characters as nodes" }},
-  dialogic: {{ label: "dialogic cast on play level",
-               detail: "drop play-level mutes" }},
-  cospeech: {{ label: "dialogic cast on segment level",
-               detail: "only segment-active speakers" }},
+  "full":       {{ label: "stage co-presence",
+                   detail: "all on-stage characters as nodes" }},
+  "p-speaking": {{ label: "speaking cast on play level",
+                   detail: "drop play-level mutes" }},
+  "s-speaking": {{ label: "speaking cast on segment level",
+                   detail: "only segment-active speakers" }},
 }};
 
+// Provenance for the figure exporter: the caption stamped into every
+// exported SVG/PNG, and the slug that names the file.  The point is that one
+// panel shows different numbers under different spines and models, and an
+// image carries none of that on its own; a figure in an article should say
+// what it is a figure of.  See figure_export.py.
+const SEG_LABELS_LONG = {{
+  "sd": "stage-direction segmentation",
+  "large-seq": "large-sequence segmentation",
+  "middle-seq": "middle-sequence segmentation",
+}};
+function figureProvenance(panel) {{
+  const play = DATA.play || {{}};
+  const name = play.title_en || play.title_grc || document.title;
+  const ml = MUTE_MODE_LABELS[STATE.muteMode] || MUTE_MODE_LABELS.full;
+  const groups = Array.from(STATE.aggregateGroups).sort();
+  const metrics = (currentSegData() || {{}}).metrics || {{}};
+  const bits = [name, SEG_LABELS_LONG[STATE.seg] || STATE.seg, ml.label];
+  if (AGGREGATE_GROUPS.length) {{
+    bits.push(groups.length ? "aggregated: " + groups.join(", ")
+                            : "not aggregated");
+  }}
+  if (metrics.edge_weight) bits.push("edges weighted by " + metrics.edge_weight);
+  // The dynamic graph shows one segment at a time; a figure of it is
+  // meaningless without saying which.
+  if (panel && panel.querySelector("#dynamic-graph") && STATE.segmentIdx >= 0) {{
+    const segs = (currentSegData() || {{}}).segments || [];
+    const seg = segs.find(s => s.id === STATE.segmentIdx);
+    if (seg) bits.push("segment " + (seg.label || seg.id));
+  }}
+  return {{
+    caption: bits.join(" \\u00b7 "),
+    slug: [name, STATE.seg, STATE.muteMode,
+           groups.length ? "agg" : ""].filter(Boolean).join("-"),
+  }};
+}}
+// Every segmentation x network model x aggregation state this play was
+// computed under, as one table.  Comparing configurations otherwise means
+// switching the controls, reading, switching back and remembering; the
+// numbers are all in the payload already.  Consumed by figure_export.py.
+function figureComparisonRows() {{
+  const play = DATA.play || {{}};
+  const name = play.title_en || play.title_grc || document.title;
+  // `id` first, as in the corpus export, so the two files join on it.
+  const header = ["id", "play", "segmentation", "model", "aggregated", "order",
+    "edges", "density", "avg_degree", "max_degree", "diameter",
+    "avg_path_length", "avg_clustering", "components", "segments",
+    "all_in_index", "all_in_segment_label", "final_segment_cast_share",
+    "max_simultaneous_speakers", "gini_words", "effective_speakers",
+    "top_speaker", "top_speaker_word_share", "top_speaker_temporal_gini",
+    "edge_weight"];
+  const round = v => (typeof v === "number" && !Number.isInteger(v))
+    ? +v.toFixed(6) : v;
+  const rows = [];
+  Object.keys(DATA.segmentations || {{}}).forEach(function (spine) {{
+    const blk = DATA.segmentations[spine] || {{}};
+    // The base block is the unaggregated stage view; `variants` holds the
+    // rest, keyed "<model>:<comma-joined groups>".
+    const entries = [["full", "", blk.metrics]];
+    const vars = blk.variants || {{}};
+    Object.keys(vars).sort().forEach(function (key) {{
+      const cut = key.indexOf(":");
+      entries.push([key.slice(0, cut), key.slice(cut + 1), (vars[key] || {{}}).metrics]);
+    }});
+    entries.forEach(function (e) {{
+      const model = e[0], groups = e[1], m = e[2];
+      if (!m) return;
+      const si = m.segment_indices || {{}};
+      const sd = m.speech_distribution || {{}};
+      rows.push([play.id || "", name, spine, model, groups, m.size, m.numEdges,
+        round(m.density), round(m.averageDegree), m.maxDegree, m.diameter,
+        round(m.averagePathLength), round(m.averageClustering),
+        m.numConnectedComponents, m.num_segments, round(si.all_in_index),
+        si.all_in_segment_label, round(si.final_segment_cast_share),
+        si.max_simultaneous_speakers, round(sd.gini_words),
+        round(sd.effective_speakers),
+        (sd.top_speaker_ids || []).join(", "),
+        round(sd.top_speaker_word_share), round(sd.top_speaker_temporal_gini),
+        m.edge_weight].map(v => v == null ? "" : v));
+    }});
+  }});
+  return {{ name: name + "-all-configurations", header: header, rows: rows }};
+}}
 function currentSegData() {{
   // Variants are keyed by `"<mute_mode>:<sorted_group_subset>"`, e.g.:
-  //   "stage:"            = stage co-presence, no aggregation (= top-level)
-  //   "dialogic:"         = dialogic / play level, no aggregation
-  //   "cospeech:"         = dialogic / segment level, no aggregation
-  //   "stage:choros"      = stage co-presence, aggregated by choros
-  //   "dialogic:choros"   = dialogic / play level, aggregated
-  //   "cospeech:choros"   = dialogic / segment level, aggregated
+  //   "full:"            = stage co-presence, no aggregation (= top-level)
+  //   "p-speaking:"       = speaking cast / play level, no aggregation
+  //   "s-speaking:"       = speaking cast / segment level, no aggregation
+  //   "full:choros"       = stage co-presence, aggregated by choros
+  //   "p-speaking:choros" = speaking cast / play level, aggregated
+  //   "s-speaking:choros" = speaking cast / segment level, aggregated
   // The mute radio + the per-group checkboxes uniquely determine the key.
-  // "stage" with no aggregation is the top-level fields, not a variant.
+  // "full" with no aggregation is the top-level fields, not a variant.
   const base = DATA.segmentations[STATE.seg];
   if (!base) return base;
-  const muteKey = STATE.muteMode || "stage";
+  const muteKey = STATE.muteMode || "full";
   const groupKey = Array.from(STATE.aggregateGroups || []).sort().join(",");
-  if (muteKey === "stage" && !groupKey) return base;
+  if (muteKey === "full" && !groupKey) return base;
   const variant = (base.variants || {{}})[muteKey + ":" + groupKey];
-  return variant || base;
+  if (variant) return variant;
+  // Nothing for this combination -- which the writer should not allow, the
+  // checkboxes being drawn from the groups it built variants for.  Should it
+  // happen anyway, give back a block whose label is true.  Returning `base`
+  // outright would hand over the stage-presence graph while the radio, the
+  // chips and the figure captions still read "speaking cast": a different
+  // model, a different node set, and nothing on screen to say so.
+  console.warn("no block for " + muteKey + ":" + groupKey
+               + " on spine " + STATE.seg + "; falling back");
+  // Drop the aggregation first -- the same model, unaggregated.
+  if (groupKey) {{
+    if (STATE.aggregateGroups) STATE.aggregateGroups.clear();
+    document.querySelectorAll('#aggregate-toggles input[type="checkbox"]')
+      .forEach(cb => {{ cb.checked = false; }});
+    const unaggregated = (base.variants || {{}})[muteKey + ":"];
+    if (unaggregated) return unaggregated;
+  }}
+  // Only then the model, and say which one is showing.
+  if (muteKey !== "full") {{
+    STATE.muteMode = "full";
+    document.querySelectorAll('input[name="mute-mode"]')
+      .forEach(r => {{ r.checked = (r.value === "full"); }});
+  }}
+  return base;
 }}
 // Active-filter chip strip in the header.  Always shows the current
 // network model (mutes-in / mutes-out) plus one chip per group currently
@@ -949,8 +1121,8 @@ function renderActiveFilters() {{
   const host = document.getElementById("active-filters");
   if (!host) return;
   host.innerHTML = "";
-  // Model chip - always shown so the reader knows which edge rule is in force.
-  const ml = MUTE_MODE_LABELS[STATE.muteMode] || MUTE_MODE_LABELS.stage;
+  // Model chip - always shown so the reader knows which model is in force.
+  const ml = MUTE_MODE_LABELS[STATE.muteMode] || MUTE_MODE_LABELS.full;
   const modelLabel = ml.label
     + ' <span class="detail">(' + ml.detail + ')</span>';
   host.innerHTML += '<span class="filter-chip">' + modelLabel + '</span> ';
@@ -961,8 +1133,8 @@ function renderActiveFilters() {{
 }}
 
 // Under the dual-model design, the mute toggle selects a different
-// precomputed variant entirely (mutes-in: stage co-presence; mutes-out:
-// per-segment co-speech).  The variant's `characters` array carries
+// precomputed variant entirely (mutes-in: on-stage cast; mutes-out:
+// per-segment speaking cast).  The variant's `characters` array carries
 // every character declared in <listPerson> (each row tagged with
 // `in_network`), so to render only the active graph's nodes we filter
 // by the precomputed `in_network` flag.  Under mutes-out this drops the
@@ -972,22 +1144,33 @@ function visibleCharacters() {{
   return currentSegData().characters.filter(c => c.in_network !== false);
 }}
 function edgeEnd(v) {{ return (v && typeof v === "object") ? v.id : v; }}
+// A collective and its own part are one body, and the graph builders never
+// join them (network._pairs).  The cliques this page draws per segment skip
+// the pair the same way, or a middle sequence holding a split would show the
+// chorus meeting its own halves.
+function partOfMap() {{
+  const m = new Map();
+  currentSegData().characters.forEach(c => m.set(c.id, new Set(c.part_of || [])));
+  return m;
+}}
+function oneBody(partOf, a, b) {{
+  return (partOf.has(a) && partOf.get(a).has(b))
+      || (partOf.has(b) && partOf.get(b).has(a));
+}}
 function visibleEdges() {{ return currentSegData().edges; }}
-// Per-segment cast:
-//   mutes-in  -> stage-present characters
-//   mutes-out -> per-segment speakers (>=1 non-empty <l> in segment)
-// Used by DCR / sigma / beat chart, so the dynamic measures track the
-// active edge rule automatically.
+// Per-segment cast under the active network model.  Used by DCR / sigma /
+// beat chart, and matching the cast the pipeline hands to the plot-dynamics
+// indices, so every per-segment reading on the page answers for one model:
+//   full       -> every character on stage (seg.characters)
+//   p-speaking -> stage cast minus play-level mutes (intersected with
+//                 the kept node set of the current variant)
+//   s-speaking -> only the characters the segment attributes an utterance
+//                 to (seg.speakers)
 function castOf(seg) {{
-  // Per-segment cast under the active network model:
-  //   stage    -> every character on stage (seg.characters)
-  //   dialogic -> stage cast minus play-level mutes (intersected with
-  //               the kept node set of the current variant)
-  //   cospeech -> only the per-segment speakers (seg.speakers)
-  const m = STATE.muteMode || "stage";
-  if (m === "stage")    return seg.characters.slice();
-  if (m === "cospeech") return (seg.speakers || []).slice();
-  // dialogic: filter stage cast by the variant's kept (non-mute) IDs
+  const m = STATE.muteMode || "full";
+  if (m === "full")    return seg.characters.slice();
+  if (m === "s-speaking") return (seg.speakers || []).slice();
+  // p-speaking: filter the stage cast by the variant's kept (non-mute) IDs
   const kept = new Set(visibleCharacters().map(c => c.id));
   return (seg.characters || []).filter(cid => kept.has(cid));
 }}
@@ -997,23 +1180,32 @@ function castOf(seg) {{
 // drama_change_rate = mean of those.  Recomputed on the fly so the mute
 // toggle (and segmentation tab) is honoured.
 function segmentChangeRates() {{
-  // Returns an array of {{fromId, rate}} objects, one per consecutive
-  // segment pair.  `fromId` is the seg.id of the segment the transition
-  // departs from -- letting the beat chart plot each rate at the
-  // corresponding seg.id on the (1-indexed) x-axis.  The artificial
-  // transition out of an empty pre-play initial segment is skipped
-  // (would be 1.0 by definition; Fischer/Trilcke 2017 Fig. 4 omits it).
+  // Returns an array of {{fromId, fromNo, rate}} objects, one per
+  // consecutive segment pair.  `fromId` is the seg.id of the segment the
+  // transition departs from -- the LINKAGE key (scrub target, TEI
+  // pre-select).  `fromNo` is the DISPLAY number in the real-segment
+  // frame: the empty pre-play marker counts as segment 0, so its skipped
+  // outgoing transition is 0 → 1 (always 1.0 by definition: comparing
+  // anything with the empty set) and the first plotted transition
+  // reads 1 → 2 on every spine.  Symmetrically, the
+  // transition INTO the empty terminal segment (the closing bracket
+  // after a full exeunt) is 1.0 by the same construction and is
+  // likewise skipped: the series ends at the last transition between
+  // acted segments.
   const segs = currentSegData().segments;
   const out = [];
   const startI = (segs.length > 0 && segs[0].is_initial &&
                   castOf(segs[0]).length === 0) ? 1 : 0;
-  for (let i = startI; i < segs.length - 1; i++) {{
+  const endI = (segs.length > 1 && segs[segs.length - 1].is_final &&
+                castOf(segs[segs.length - 1]).length === 0)
+               ? segs.length - 2 : segs.length - 1;
+  for (let i = startI; i < endI; i++) {{
     const a = new Set(castOf(segs[i]));
     const b = new Set(castOf(segs[i + 1]));
     const union = new Set([...a, ...b]);
     const rate = union.size === 0 ? 0 :
       ([...union].filter(x => !(a.has(x) && b.has(x))).length / union.size);
-    out.push({{fromId: segs[i].id, rate: rate}});
+    out.push({{fromId: segs[i].id, fromNo: segs[i].id - startI, rate: rate}});
   }}
   return out;
 }}
@@ -1033,7 +1225,7 @@ function stdev(arr, mean) {{
 // -------------------------------------------------------------------- tabs
 function renderTabs() {{
   const tabs = d3.select("#seg-tabs");
-  const labels = {{ sd: "Stage directions", div2: "div2", div3: "div3" }};
+  const labels = {{ sd: "Stage directions", "large-seq": "large-seq", "middle-seq": "middle-seq" }};
   tabs.selectAll("button.tab")
     .data(AVAILABLE_MODES, d => d)
     .join(
@@ -1059,25 +1251,24 @@ function renderKPIs() {{
   const dem = m.demographics || {{}};
   const spd = m.speech_distribution || {{}};
   const sgi = m.segment_indices || {{}};
-  const sx  = dem.sex || {{male: 0, female: 0, unspecified: 0}};
+  const sx  = dem.sex || {{male: 0, female: 0, mixed: 0, unspecified: 0}};
   const na  = dem.nature || {{human: 0, divine: 0, animal: 0, concept: 0, other: 0}};
 
   // Helper: "a · b" / "a · b · c" pair-rendering for compact composition rows.
   const pair = (...xs) => xs.map(v => v == null ? "0" : String(v)).join(" \\u00B7 ");
 
-  const topShare = spd.top_speaker_verse_share || 0;
+  const topShare = spd.top_speaker_word_share || 0;
   const allInIdx = sgi.all_in_index;
-  const allInSeg = sgi.all_in_segment;
-  const finalSz  = sgi.final_scene_size;
+  const allInLab = sgi.all_in_segment_label;
+  const finalSz  = sgi.final_segment_cast_share;
 
-  // The "spk N" alt-line is gone: under the new dual-model, mutes-out
-  // IS the speakers-only DraCor-equivalent view, reached by toggling
-  // off "show mute characters".  The headline values you read here are
-  // already the right values for whatever model is currently active.
+  // No alternative "speakers-only" line: the model radio already selects
+  // which cast is in view, and every value below -- the plot-dynamics
+  // indices included -- is computed for the model that is active.
   const sections = [
     {{
       title: "Headline",
-      hint: (MUTE_MODE_LABELS[STATE.muteMode] || MUTE_MODE_LABELS.stage).label
+      hint: (MUTE_MODE_LABELS[STATE.muteMode] || MUTE_MODE_LABELS.full).label
             + " model",
       items: [
         {{ k: "order",           v: m.size }},
@@ -1087,15 +1278,15 @@ function renderKPIs() {{
         {{ k: "max degree",
             v: m.maxDegree + " (" + (m.maxDegreeIds || []).join(", ") + ")" }},
         {{ k: "segments",        v: m.num_segments }},
-        // The four structural metrics: same category (network-level), much
-        // lower resolution on small ancient-drama casts.  Greyed inline
-        // rather than placed in their own section.
-        {{ k: "diameter",               v: m.diameter, structural: true }},
-        {{ k: "average path length",    v: fmt(m.averagePathLength, 2), structural: true }},
-        {{ k: "average clustering",     v: fmt(m.averageClustering, 3), structural: true }},
-        {{ k: "connected components",   v: m.numConnectedComponents, structural: true }},
+        // Same category as the rest of the section and shown with the same
+        // weight; what differs is how much they separate, which the
+        // footnote states as a measured fact rather than as a hedge.
+        {{ k: "diameter",               v: m.diameter }},
+        {{ k: "average path length",    v: fmt(m.averagePathLength, 2) }},
+        {{ k: "average clustering",     v: fmt(m.averageClustering, 3) }},
+        {{ k: "connected components",   v: m.numConnectedComponents }},
       ],
-      footnote: "the four greyed metrics above have low resolution on small ancient-drama networks (\\u2272 50 nodes); reported for completeness and comparability with DraCor.",
+      footnote: "every value here is exact for the graph on screen, not an estimate. Two of them separate little at drama scale: over the eleven Aristophanic comedies and all 135 model \\u00d7 segmentation combinations, the diameter is 2 in 95 cases and never above 4, and the cast is connected in 128. Clustering is also raised by construction, each segment contributing a clique \\u2014 see Methods \\u00a71.",
     }},
     {{
       title: "Cast composition",
@@ -1104,31 +1295,38 @@ function renderKPIs() {{
             v: pair(dem.speakers, dem.mutes) }},
         {{ k: "individuals \\u00B7 collectives",
             v: pair(dem.individuals, dem.collectives) }},
-        {{ k: "male \\u00B7 female \\u00B7 unspec.",
-            v: pair(sx.male, sx.female, sx.unspecified) }},
-        {{ k: "human \\u00B7 divine \\u00B7 animal \\u00B7 concept",
-            v: pair(na.human, na.divine, na.animal, na.concept + (na.other || 0)) }},
+        {{ k: sx.mixed ? "male \\u00B7 female \\u00B7 mixed \\u00B7 unspec."
+                       : "male \\u00B7 female \\u00B7 unspec.",
+            v: sx.mixed ? pair(sx.male, sx.female, sx.mixed, sx.unspecified)
+                        : pair(sx.male, sx.female, sx.unspecified) }},
+        {{ k: na.other
+               ? "human \\u00B7 divine \\u00B7 animal \\u00B7 concept \\u00B7 other"
+               : "human \\u00B7 divine \\u00B7 animal \\u00B7 concept",
+            v: na.other
+               ? pair(na.human, na.divine, na.animal, na.concept, na.other)
+               : pair(na.human, na.divine, na.animal, na.concept) }},
       ],
     }},
     {{
       title: "Speech distribution",
       items: [
         {{ k: "top speaker",
-            v: (spd.top_speaker_id || "\\u2014") +
+            v: ((spd.top_speaker_ids || []).join(", ") || "\\u2014") +
                " (" + fmt(topShare * 100, 1) + "%)" }},
-        {{ k: "Gini (verses)",        v: fmt(spd.gini_verses || 0, 3) }},
-        {{ k: "total verses spoken",  v: spd.total_verses_spoken || 0 }},
+        {{ k: "Gini (words)",         v: fmt(spd.gini_words || 0, 3) }},
+        {{ k: "effective speakers",   v: fmt(spd.effective_speakers || 0, 2) }},
+        {{ k: "total words spoken",   v: spd.total_words_spoken || 0 }},
       ],
     }},
     {{
-      title: "Plot dynamics (Trilcke / Fischer 2017)",
+      title: "Plot dynamics (Fischer et al. 2017)",
       items: [
         {{ k: "drama-change rate",  v: fmt(dcr, 3),  beat: true }},
         {{ k: "\\u03C3 change rate", v: fmt(sdv, 3), beat: true }},
         {{ k: "all-in index",
             v: (allInIdx == null ? "\\u2014" : fmt(allInIdx, 3)) +
-               (allInSeg == null ? "" : " (seg " + allInSeg + ")") }},
-        {{ k: "final-scene size",       v: fmt(finalSz, 3) }},
+               (allInLab == null ? "" : " (at " + allInLab + ")") }},
+        {{ k: "final segment cast share", v: fmt(finalSz, 3) }},
         {{ k: "max simultaneous speakers", v: sgi.max_simultaneous_speakers || 0 }},
       ],
     }},
@@ -1150,7 +1348,7 @@ function renderKPIs() {{
   const its = dls.selectAll(".item")
     .data(d => d.items).enter().append("div")
     .attr("class", d =>
-      "item" + (d.beat ? " beat" : "") + (d.structural ? " structural" : ""));
+      "item" + (d.beat ? " beat" : ""));
   its.append("dt").text(d => d.k);
   const dds = its.append("dd");
   dds.append("span").attr("class", "primary").text(d => d.v);
@@ -1220,10 +1418,12 @@ function renderStaticGraph() {{
     .attr("class", "node");
 
   // Degree encoded by node radius: r = 3 + sqrt(degree) * 2.8.
-  // Area then scales roughly with degree (sqrt-radius = linear-area), but
-  // the multiplier is bold enough that a degree-30 node is ~6x the area
-  // of a degree-0 isolate -- visually unambiguous, not the subliminal
-  // 4x ratio the old `r = 5 + sqrt(degree) * 1.2` produced.
+  // Square-root radius makes area grow roughly with degree; the 3px floor
+  // keeps an isolate visible and costs proportionality at the low end.
+  // The multiplier is bold enough to read: a degree-30 node is 6.1x the
+  // RADIUS of a degree-0 isolate and 37x its area, where the old
+  // `r = 5 + sqrt(degree) * 1.2` gave 2.3x the radius and 5.4x the area
+  // -- a difference the eye did not register.
   nodeSel.append("circle")
     .attr("r", d => 3 + Math.sqrt(d.degree) * 2.8)
     .attr("fill", nodeColor);
@@ -1325,9 +1525,11 @@ function renderDynamicGraph() {{
     const visible = new Set(chars.map(c => c.id));
     edgesNow = [];
     const arr = cast.filter(c => visible.has(c));
+    const partOf = partOfMap();
     for (let i = 0; i < arr.length; i++)
       for (let j = i + 1; j < arr.length; j++)
-        edgesNow.push({{source: arr[i], target: arr[j]}});
+        if (!oneBody(partOf, arr[i], arr[j]))
+          edgesNow.push({{source: arr[i], target: arr[j]}});
   }} else {{
     presentSet = new Set(chars.map(c => c.id));
     edgesNow = visibleEdges();
@@ -1373,10 +1575,28 @@ function renderDynamicGraph() {{
 }}
 
 // -------------------------------------------------------------------- size-over-segments chart
+
+// Cumulative word-position boundaries for each segment, in array order.
+// Returns {{left:[], right:[], total}}.  Drives the "word position" x-axis
+// mode, which spaces segments by their word mass (stage-time) instead of by
+// index: segment i occupies the word interval [left[i], right[i]].
+function segWordBounds(segs) {{
+  const left = [], right = [];
+  let acc = 0;
+  for (let i = 0; i < segs.length; i++) {{
+    left.push(acc);
+    acc += (segs[i].word_count || 0);
+    right.push(acc);
+  }}
+  return {{ left, right, total: acc }};
+}}
+
 function renderProgressionChart(selector, valuesOf, label, color) {{
-  // Shared renderer for the size and verses panels.  They share x-axis (segment
-  // index), div2 backdrops, click-to-jump, and curve style — only the y series
-  // and the colour differ.
+  // Shared renderer for the size and words panels.  They share the x-axis
+  // (the segment id, so both curves line up with the segments table) and the
+  // curve style; only the y series and the colour differ.  Neither is
+  // clickable: jumping to a segment is done from the beat chart, the
+  // timeline, the heatmap or the tables.
   const svg = d3.select(selector);
   const w = svg.node().clientWidth, h = svg.node().clientHeight;
   svg.selectAll("*").remove();
@@ -1393,16 +1613,6 @@ function renderProgressionChart(selector, valuesOf, label, color) {{
   const firstId = segs[0].id, lastId = segs[segs.length - 1].id;
   const x = d3.scaleLinear().domain([firstId, lastId]).range([M.left, w - M.right]);
   const y = d3.scaleLinear().domain([0, d3.max(ys) || 1]).nice().range([h - M.bottom, M.top]);
-
-  // computeDiv2Spans returns array-index positions; convert to seg.id
-  // before passing to the x scale.
-  const div2Spans = computeDiv2Spans(segs);
-  svg.append("g").selectAll("rect").data(div2Spans).enter().append("rect")
-    .attr("x", d => x(segs[d.start].id) - 0.5)
-    .attr("y", M.top)
-    .attr("width", d => Math.max(1, x(segs[d.end].id) - x(segs[d.start].id)))
-    .attr("height", h - M.top - M.bottom)
-    .attr("fill", (d, i) => i % 2 === 0 ? "transparent" : "rgba(0,0,0,0.025)");
 
   svg.append("g").attr("transform", `translate(0,${{h - M.bottom}})`)
      .call(d3.axisBottom(x).ticks(Math.min(10, segs.length)).tickFormat(d => Math.round(d)));
@@ -1429,10 +1639,10 @@ function renderSizeChart() {{
                          s => castOf(s).length,
                          "characters", "var(--accent)");
 }}
-function renderVerseChart() {{
-  renderProgressionChart("#verse-chart",
-                         s => s.verse_count || 0,
-                         "verses", "var(--speaker)");
+function renderWordChart() {{
+  renderProgressionChart("#word-chart",
+                         s => s.word_count || 0,
+                         "words", "var(--speaker)");
 }}
 
 // -------------------------------------------------------------------- beat chart
@@ -1450,34 +1660,41 @@ function renderBeatChart() {{
     return;
   }}
   const dcr = dramaChangeRate(rates);
-
-  // x is the seg.id the transition departs from (e.g. a rate plotted at
-  // x=4 is the cast-change between segment 4 and segment 5).  Domain
-  // spans the seg.ids actually represented in the rates series.
   const segs = currentSegData().segments;
-  const firstId = rates[0].fromId, lastId = rates[rates.length - 1].fromId;
-  const x = d3.scaleLinear().domain([firstId, lastId]).range([M.left, w - M.right]);
+
+  const vb = segWordBounds(segs);
+  const wordMode = (STATE.chartXMode === "word" && vb.total > 0);
+
+  // A transition departs from segment fromId.  In segment mode it is plotted
+  // at that id; in word mode it sits at the boundary between the from-segment
+  // and the next — i.e. the cumulative words up to and including fromId — so
+  // doorway flurries collapse and turnover between long scenes stands alone.
+  let x, xPos, xLabelText;
+  if (wordMode) {{
+    const idToRight = new Map();
+    segs.forEach((s, i) => idToRight.set(s.id, vb.right[i]));
+    x = d3.scaleLinear().domain([0, vb.total]).range([M.left, w - M.right]);
+    xPos = d => x(idToRight.has(d.fromId) ? idToRight.get(d.fromId) : 0);
+    xLabelText = "word position";
+  }} else {{
+    const firstNo = rates[0].fromNo, lastNo = rates[rates.length - 1].fromNo;
+    x = d3.scaleLinear().domain([firstNo, lastNo]).range([M.left, w - M.right]);
+    xPos = d => x(d.fromNo);
+    xLabelText = "transition from segment";
+  }}
   const y = d3.scaleLinear().domain([0, 1]).range([h - M.bottom, M.top]);
 
-  const div2Spans = computeDiv2Spans(segs);
-  svg.append("g").selectAll("rect").data(div2Spans).enter().append("rect")
-    .attr("x", d => x(Math.max(firstId, segs[d.start].id)) - 0.5)
-    .attr("y", M.top)
-    .attr("width", d => Math.max(1,
-        x(Math.min(lastId, segs[d.end].id)) -
-        x(Math.max(firstId, segs[d.start].id))))
-    .attr("height", h - M.top - M.bottom)
-    .attr("fill", (d, i) => i % 2 === 0 ? "transparent" : "rgba(0,0,0,0.025)");
-
   svg.append("g").attr("transform", `translate(0,${{h - M.bottom}})`)
-    .call(d3.axisBottom(x).ticks(Math.min(10, rates.length)).tickFormat(d => Math.round(d)));
+    .call(wordMode
+      ? d3.axisBottom(x).ticks(6)
+      : d3.axisBottom(x).ticks(Math.min(10, rates.length)).tickFormat(d => Math.round(d)));
   svg.append("g").attr("transform", `translate(${{M.left}},0)`)
     .call(d3.axisLeft(y).ticks(5).tickFormat(d3.format(".1f")));
   svg.append("text").attr("x", M.left).attr("y", 11).attr("font-size", 10)
     .attr("fill", "var(--muted)").text("change rate");
   svg.append("text").attr("x", w - M.right).attr("y", h - 4).attr("text-anchor", "end")
     .attr("font-size", 10).attr("fill", "var(--muted)")
-    .text("transition from segment");
+    .text(xLabelText);
 
   // drama-change-rate reference line.
   svg.append("line")
@@ -1488,32 +1705,32 @@ function renderBeatChart() {{
     .attr("text-anchor", "end").attr("font-size", 10).attr("fill", "var(--beat)")
     .text("drama-change rate = " + fmt(dcr, 3));
 
-  const line = d3.line().x(d => x(d.fromId)).y(d => y(d.rate));
+  const line = d3.line().x(xPos).y(d => y(d.rate));
   svg.append("path").attr("fill", "none").attr("stroke", "var(--beat)")
     .attr("stroke-width", 2).attr("d", line(rates));
-  // Markers.
-  svg.append("g").selectAll("circle").data(rates).enter().append("circle")
-    .attr("cx", d => x(d.fromId)).attr("cy", d => y(d.rate))
+  // Markers, each paired with a generous transparent hover target that
+  // carries a native tooltip naming the segment transition in the display
+  // frame (fromNo → fromNo+1) and its change-rate value; the click
+  // still scrubs by fromId, the segment's real id.
+  const mk = svg.append("g");
+  mk.selectAll("circle.beat-pt").data(rates).enter().append("circle")
+    .attr("class", "beat-pt")
+    .attr("cx", xPos).attr("cy", d => y(d.rate))
     .attr("r", 2).attr("fill", "var(--beat)");
-}}
-
-function computeDiv2Spans(segs) {{
-  // Returns [{{start, end, label}}] in segment indices, grouping by div2_n.
-  const out = [];
-  if (!segs.length) return out;
-  let cur = {{start: 0, end: 0, label: segs[0].div2_n || ""}};
-  for (let i = 0; i < segs.length; i++) {{
-    const lbl = segs[i].div2_n || "";
-    if (i === 0) {{ cur = {{start: 0, end: 0, label: lbl}}; continue; }}
-    if (lbl !== cur.label) {{
-      cur.end = i - 1;
-      out.push(cur);
-      cur = {{start: i, end: i, label: lbl}};
-    }}
-  }}
-  cur.end = segs.length - 1;
-  out.push(cur);
-  return out;
+  mk.selectAll("circle.beat-hit").data(rates).enter().append("circle")
+    .attr("class", "beat-hit")
+    .attr("cx", xPos).attr("cy", d => y(d.rate))
+    .attr("r", 7).attr("fill", "transparent")
+    .style("pointer-events", "all").style("cursor", "pointer")
+    .on("click", (_, d) => {{
+      // Same scrub action as the segments table / heatmap: jump the
+      // dynamic graph to the segment this transition departs from.
+      STATE.segmentIdx = d.fromId;
+      _pendingTEISegment = d.fromId;   // also pre-select for the TEI source view
+      updateSlider(); renderDynamicGraph(); renderInfo();
+    }})
+    .append("title")
+      .text(d => `segment ${{d.fromNo}} \\u2192 ${{d.fromNo + 1}}  \\u00B7  change rate ${{fmt(d.rate, 3)}}`);
 }}
 
 // -------------------------------------------------------------------- tables
@@ -1522,49 +1739,58 @@ function renderCharTable() {{
     ["name",          d => d.name + (d.name_grc ? " ("+d.name_grc+")" : "")],
     ["roles",         d => roleChips(d), true],
     ["degree",        d => d.degree, true],
-    ["weighted",      d => fmt(d.weightedDegree, 1), true],
+    ["weighted",      d => fmt(d.weightedDegree, 1), true,
+                      d => d.weightedDegree || 0],
     ["betweenness",   d => fmt(d.betweenness), true],
     ["closeness",     d => fmt(d.closeness), true],
     ["eigenvector",   d => fmt(d.eigenvector), true],
+    // Local clustering and its triangles: read together, they say whether a
+    // character's partners also speak to one another.
+    ["clustering",    d => fmt(d.clustering, 3), true],
+    ["triangles",     d => d.triangles || 0, true],
   ];
   drawTable("#char-table", cols, visibleCharacters(), "degree", -1);
 }}
 // Speech concentration table -- per-character temporal Gini.  Sits inside
 // Plot Dynamics conceptually (a time-distribution measure on speech, not
-// a network-position measure).  Filtered to speakers with at least 5
-// verses to keep the table interpretable; the threshold is purely a
+// a network-position measure).  Filtered to speakers with at least 40
+// words to keep the table interpretable; the threshold is purely a
 // display filter and does not influence any number in the table.
 function renderTGiniTable() {{
-  const MIN_VERSES = 5;
+  const MIN_WORDS = 40;
   const csd = currentSegData() || {{}};
   const nActive = ((csd.metrics || {{}}).speech_distribution || {{}}).n_active_segments;
   // Pull speech-time rows out of the nodes list (the centralities table
   // ignores these columns).  visibleCharacters() respects the mute
   // toggle, which here amounts to dropping pure mutes -- they have no
-  // verses anyway, so the filter is a no-op for the metric but keeps
+  // words anyway, so the filter is a no-op for the metric but keeps
   // the row set consistent with the rest of the dashboard.
   const rows = visibleCharacters()
-    .filter(d => d.temporal_gini != null && (d.total_verses || 0) >= MIN_VERSES);
+    .filter(d => d.temporal_gini != null && (d.total_words || 0) >= MIN_WORDS);
   const cols = [
     ["character",       d => d.name + (d.name_grc ? " ("+d.name_grc+")" : "")],
     ["roles",           d => roleChips(d), true],
-    ["verses",          d => d.total_verses || 0, true],
-    ["speak. segs",     d => {{
+    ["words",           d => d.total_words || 0, true],
+    // Denominator is the character's own stage time, not the play's span:
+    // that is what tGini beside it now divides by, and the two columns
+    // would otherwise answer different questions.
+    ["speaks / on stage", d => {{
       const s = d.speaking_segments || 0;
-      if (!nActive) return s;
-      const pct = (100 * s / nActive).toFixed(0);
-      return s + " / " + nActive + " (" + pct + "%)";
-    }}, true],
+      const m = d.n_onstage_segments || 0;
+      if (!m) return s;
+      return s + " / " + m + " (" + (100 * s / m).toFixed(0) + "%)";
+    }}, true, d => (d.n_onstage_segments
+                    ? (d.speaking_segments || 0) / d.n_onstage_segments : 0)],
     ["tGini",           d => fmt(d.temporal_gini, 3), true],
   ];
-  drawTable("#tgini-table", cols, rows, "verses", -1, (d) => {{
+  drawTable("#tgini-table", cols, rows, "words", -1, (d) => {{
     // Click-through: scrub the dynamic graph to the character's
     // loudest segment.  Same wiring pattern as the segments-table
     // row click (STATE.segmentIdx -> updateSlider + render).
     const segs = (currentSegData() || {{}}).segments || [];
     let best = null, bestV = 0;
     for (const s of segs) {{
-      const vbs = s.verses_by_speaker || {{}};
+      const vbs = s.words_by_speaker || {{}};
       const v = vbs[d.id] || 0;
       if (v > bestV) {{ bestV = v; best = s.id; }}
     }}
@@ -1576,12 +1802,20 @@ function renderTGiniTable() {{
     }}
   }});
 }}
+// Role chips: two independent axes, in the vocabulary of the demographics
+// panel -- muteness, and individual (<person>) vs collective (<personGrp>),
+// with `chorus` as the specific collective.  The collectivity chip is always
+// emitted.  It used to appear only for collectives, with a bare "speaker"
+// standing in for everyone else, which set up a contrast that does not
+// exist: the chorus speaks too, and in the speech-concentration table every
+// row speaks by construction.
 function roleChips(d) {{
   const out = [];
   if (d.is_mute) out.push('<span class="chip mute">mute</span>');
   if (d.is_chorus) out.push('<span class="chip chorus">chorus</span>');
-  if (d.is_collective && !d.is_chorus) out.push('<span class="chip collective">collective</span>');
-  return out.join(" ") || '<span class="chip">speaker</span>';
+  else if (d.is_collective) out.push('<span class="chip collective">collective</span>');
+  else out.push('<span class="chip">individual</span>');
+  return out.join(" ");
 }}
 function renderSegTable() {{
   // "chars" column counts the *operational* cast for the active edge
@@ -1593,19 +1827,20 @@ function renderSegTable() {{
     ["label",     d => d.label],
     ["chars",     d => castOf(d).length, true],
     ["speeches",  d => d.num_speeches, true],
-    ["verses",    d => d.verse_count, true],
+    ["words",     d => d.word_count, true],
+    ["crossings", d => d.num_crossings || 0, true],
     ["cast",      d => {{
       const primary = castOf(d);
-      const head = primary.slice(0, 8).join(", ") + (primary.length > 8 ? "&hellip;" : "");
+      const head = primary.join(", ");
       // The "silent-present" annotation is only meaningful under the
-      // co-speech model, where the cast column shows speakers and we
+      // speaking-cast model, where the cast column shows speakers and we
       // want to surface stage-present-but-silent characters separately.
-      // Under stage and dialogic modes, present-but-silent characters
+      // Under stage co-presence and the play-level model, present-but-silent
       // are already in `primary` (they're on stage), so no annotation.
-      if (STATE.muteMode === "cospeech") {{
+      if (STATE.muteMode === "s-speaking") {{
         const silent = d.silent_present || [];
         if (silent.length > 0) {{
-          const stxt = silent.slice(0, 5).join(", ") + (silent.length > 5 ? "&hellip;" : "");
+          const stxt = silent.join(", ");
           return head + '<div class="silent-present">silent: ' + stxt + '</div>';
         }}
       }}
@@ -1637,8 +1872,14 @@ function drawTable(sel, cols, rows, sortKey, sortDir, onClickRow) {{
       drawTable(sel, cols, rows, sortKey, sortDir, onClickRow);
     }});
   const sortCol = cols.find(c => c[0] === sortKey) || cols[0];
+  // A column may carry a 4th element: the value to order by, for when the
+  // cell's text is not what the reader wants to sort on.  Without it the
+  // sort is lexicographic on whatever is displayed, so "9 / 38 (24%)" lands
+  // after "10 / 38 (26%)", and a formatted number orders by its digits --
+  // putting "12.7" before "3.7".
+  const keyOf = sortCol[3] || sortCol[1];
   rows = rows.slice().sort((a, b) => {{
-    const va = sortCol[1](a); const vb = sortCol[1](b);
+    const va = keyOf(a); const vb = keyOf(b);
     if (typeof va === "number" && typeof vb === "number") return sortDir * (va - vb);
     return sortDir * String(va).localeCompare(String(vb));
   }});
@@ -1681,7 +1922,7 @@ function renderInfo() {{
     const cast = castOf(s);
     document.getElementById("seg-info").textContent =
       "[" + s.id + "] " + s.label + " - " + cast.length + " chars - " +
-      s.num_speeches + " speeches - " + s.verse_count + "v";
+      s.num_speeches + " speeches - " + s.word_count + "w";
   }}
 }}
 function updateSlider() {{
@@ -1691,8 +1932,8 @@ function updateSlider() {{
   renderSegmentTimeline();
 }}
 
-// Verse-proportional segment timeline.  Each segment is a rectangle
-// whose width is proportional to its verse_count; the empty pre-play /
+// Word-proportional segment timeline.  Each segment is a rectangle
+// whose width is proportional to its word_count; the empty pre-play /
 // final-empty markers get a small minimum width so they remain
 // clickable.  The timeline doubles as a scrubber: clicking a segment
 // jumps the dynamic graph to that segment.
@@ -1704,41 +1945,48 @@ function renderSegmentTimeline() {{
   svg.selectAll("*").remove();
   svg.attr("viewBox", `0 0 ${{w}} ${{h}}`);
 
-  const MIN_VERSES = 2;   // floor so empty seg-1 / seg-N stay clickable
-  const widths = segs.map(s => Math.max(MIN_VERSES, s.verse_count || 0));
-  const total = widths.reduce((a, b) => a + b, 0) || 1;
+  // Word-proportional widths, but with a real *pixel* floor so that even a
+  // 0-word segment (a silent entrance / exit beat) stays comfortably
+  // clickable instead of collapsing to a 1px sliver on a long play -- the
+  // former word-unit floor scaled down to ~1px and made such segments
+  // impossible to hit, so clicks landed on the neighbour.
+  const MIN_PX = 6;   // minimum clickable width per segment (px)
+  const rawV = segs.map(s => Math.max(0, s.word_count || 0));
+  const totalV = rawV.reduce((a, b) => a + b, 0) || 1;
+  const flexible = Math.max(0, w - segs.length * MIN_PX);
   let cum = 0;
   const layout = segs.map((s, i) => {{
+    const wpx = MIN_PX + (rawV[i] / totalV) * flexible;
     const x = cum;
-    cum += widths[i];
-    return {{seg: s, x: x, w: widths[i]}};
+    cum += wpx;
+    return {{seg: s, x: x, w: wpx}};
   }});
-  const scale = w / total;
 
   svg.append("g").selectAll("rect").data(layout).enter().append("rect")
-    .attr("x", d => d.x * scale)
+    .attr("x", d => d.x)
     .attr("y", 2)
-    .attr("width", d => Math.max(1, d.w * scale - 1))
+    .attr("width", d => Math.max(1, d.w - 1))
     .attr("height", h - 4)
     .attr("fill", d => {{
-      if (d.seg.is_initial && (d.seg.verse_count || 0) === 0) return "#f0f0f0";
-      if (d.seg.is_final   && (d.seg.verse_count || 0) === 0) return "#f0f0f0";
+      if (d.seg.is_initial && (d.seg.word_count || 0) === 0) return "#f0f0f0";
+      if (d.seg.is_final   && (d.seg.word_count || 0) === 0) return "#f0f0f0";
       // Tint by how "loud" the segment is, so the timeline doubles as a
-      // verses-over-segments preview.
-      const maxV = d3.max(segs, s => s.verse_count || 0) || 1;
-      const t = (d.seg.verse_count || 0) / maxV;
+      // words-over-segments preview.
+      const maxV = d3.max(segs, s => s.word_count || 0) || 1;
+      const t = (d.seg.word_count || 0) / maxV;
       return d3.interpolateRgb("#d9e6f3", "#1a5fb4")(t);
     }})
     .attr("class", d => d.seg.id === STATE.segmentIdx ? "current" : null)
     .on("click", (_, d) => {{
       STATE.segmentIdx = d.seg.id;
+      _pendingTEISegment = d.seg.id;   // also pre-select for the TEI source view
       updateSlider();
       renderDynamicGraph();
       renderInfo();
     }})
     .append("title").text(d =>
       "[" + d.seg.id + "] " + d.seg.label +
-      "  -  " + (d.seg.verse_count || 0) + " verses, " +
+      "  -  " + (d.seg.word_count || 0) + " words, " +
       (d.seg.characters ? d.seg.characters.length : 0) + " chars present");
 }}
 
@@ -1747,10 +1995,28 @@ function renderSegmentTimeline() {{
 // Cell state:
 //   - transparent   = character not in segment.characters
 //   - light grey    = in segment.characters but not in segment.speakers
-//   - white -> red  = speaking; intensity = per-segment verses / max
+//   - white -> red  = speaking; intensity = per-segment words / max
 // Click a cell to set STATE.segmentIdx to that segment.  Hover shows
-// (character, segment, verses) in the tooltip.
+// (character, segment, words) in the tooltip.
 let _heatmapSort = "loudest";
+// A chart can only be drawn into a container the browser has laid out.
+// Where the page is rendered with no width -- a hidden window, a panel not
+// yet on screen -- the plot area comes out negative, and the heatmap's cells
+// would each be given a negative width: thousands of console errors and no
+// picture.  Draw nothing there, and watch the element instead, so the chart
+// appears by itself as soon as it has room.
+let _awaitingWidth = null;
+function drawWhenSized(node, draw) {{
+  if (_awaitingWidth || typeof ResizeObserver === "undefined") return;
+  _awaitingWidth = new ResizeObserver(() => {{
+    if (node.clientWidth > 0) {{
+      _awaitingWidth.disconnect();
+      _awaitingWidth = null;
+      draw();
+    }}
+  }});
+  _awaitingWidth.observe(node);
+}}
 function renderHeatmap() {{
   const svg = d3.select("#character-segment-heatmap");
   const data = currentSegData();
@@ -1758,23 +2024,41 @@ function renderHeatmap() {{
   const chars = visibleCharacters();
   if (!segs.length || !chars.length) {{ svg.selectAll("*").remove(); return; }}
 
-  // Aggregate per-character total verses (for the default sort) and
+  // Aggregate per-character total words (for the default sort) and
   // first-appearance segment id (for the "appearance order" sort).
-  const totalVerses = new Map();
+  const totalWords = new Map();
   const firstAppearance = new Map();
-  chars.forEach(c => {{ totalVerses.set(c.id, 0); firstAppearance.set(c.id, Infinity); }});
+  // Threshold passages = entrances + exits for each character across the
+  // visible segment sequence (the same per-segment characters_present the
+  // matrix renders, so it follows the active segmentation / mute / partOf
+  // mode).  Drives the "most stage entrances/exits" row order: a figure on
+  // stage throughout scores the minimum, one that shuttles on and off scores
+  // high.  Padded with an empty stage before the first and after the last
+  // segment, so the opening entrance and the closing exit both count
+  // (passages = 2 x presence-runs).  NOT the <move type="crossing">
+  // events, which by design never enter characters_present.
+  const passages = new Map();
+  chars.forEach(c => {{ totalWords.set(c.id, 0); firstAppearance.set(c.id, Infinity); passages.set(c.id, 0); }});
+  let prevPresent = new Set();
   segs.forEach(s => {{
     const present = new Set(s.characters || []);
     chars.forEach(c => {{
       if (present.has(c.id) && firstAppearance.get(c.id) > s.id) {{
         firstAppearance.set(c.id, s.id);
       }}
+      if (present.has(c.id) !== prevPresent.has(c.id)) {{
+        passages.set(c.id, passages.get(c.id) + 1);
+      }}
     }});
-    const vbs = s.verses_by_speaker || {{}};
+    prevPresent = present;
+    const vbs = s.words_by_speaker || {{}};
     for (const id in vbs) {{
-      if (totalVerses.has(id)) totalVerses.set(id, totalVerses.get(id) + vbs[id]);
+      if (totalWords.has(id)) totalWords.set(id, totalWords.get(id) + vbs[id]);
     }}
   }});
+  // Trailing exit: the stage clears when the play ends, so every character
+  // still present in the final segment crosses out once more.
+  chars.forEach(c => {{ if (prevPresent.has(c.id)) passages.set(c.id, passages.get(c.id) + 1); }});
 
   // Sort rows.
   let rows = chars.slice();
@@ -1784,12 +2068,20 @@ function renderHeatmap() {{
       if (fa !== fb) return fa - fb;
       return a.name.localeCompare(b.name);
     }});
+  }} else if (_heatmapSort === "mobility") {{
+    rows.sort((a, b) => {{
+      const ca = passages.get(a.id) || 0, cb = passages.get(b.id) || 0;
+      if (ca !== cb) return cb - ca;            // most threshold passages first
+      const va = totalWords.get(a.id) || 0, vb = totalWords.get(b.id) || 0;
+      if (va !== vb) return vb - va;            // ties: louder first, then name
+      return a.name.localeCompare(b.name);
+    }});
   }} else if (_heatmapSort === "alphabetical") {{
     rows.sort((a, b) => a.name.localeCompare(b.name));
   }} else {{
     // Loudest first (default).  Ties broken alphabetically.
     rows.sort((a, b) => {{
-      const va = totalVerses.get(a.id) || 0, vb = totalVerses.get(b.id) || 0;
+      const va = totalWords.get(a.id) || 0, vb = totalWords.get(b.id) || 0;
       if (va !== vb) return vb - va;
       return a.name.localeCompare(b.name);
     }});
@@ -1799,33 +2091,47 @@ function renderHeatmap() {{
   const w = svg.node().clientWidth, h = svg.node().clientHeight;
   const LEFT = 160, RIGHT = 16, TOP = 16, BOTTOM = 32;
   const plotW = w - LEFT - RIGHT;
+  if (!(plotW > 0)) {{ drawWhenSized(svg.node(), renderHeatmap); return; }}
   const cellW = plotW / segs.length;
   const cellH = Math.max(10, Math.min(20, (h - TOP - BOTTOM) / Math.max(1, rows.length)));
 
   svg.selectAll("*").remove();
   svg.attr("viewBox", `0 0 ${{w}} ${{h}}`);
 
-  // Per-cell max verses for colour normalisation.  Computed across the
+  // Per-cell max words for colour normalisation.  Computed across the
   // visible character set under the current sort, so different mute /
   // aggregation modes get appropriately-scaled red intensity.
   let maxV = 0;
   segs.forEach(s => {{
-    const vbs = s.verses_by_speaker || {{}};
+    const vbs = s.words_by_speaker || {{}};
     for (const id of rows.map(r => r.id)) {{
       const v = vbs[id] || 0;
       if (v > maxV) maxV = v;
     }}
   }});
-  // sqrt scaling so low-verse cells still read as clearly red rather
+  // sqrt scaling so low-word cells still read as clearly red rather
   // than washed-out pink.  Ramp endpoints are pushed darker on both
   // sides (Brewer Reds palette, steps 3 and 8) so the gradient is
-  // visible across the play's typical verse-count range.
+  // visible across the play's typical word-count range.
   const redScale = d3.scaleSqrt()
     .domain([0, Math.max(1, maxV)]).range([0, 1]);
   const colourSpeaking = d3.interpolateRgb("#fcbba1", "#a50f15");
   // Darker silent-present grey so it stands out against the page bg
   // and is unmistakably distinguishable from "absent" (transparent).
   const colourSilent = "#bbbbbb";
+  // A speech whose text is not transmitted -- the XOPOY interludes, the
+  // lacuna at Clouds 888a -- was performed, and is not silence: hatched in
+  // the ramp's darkest red on a pale ground, so it reads as speech with
+  // nothing in it.  The corpus chorus chart draws it the same way.
+  const hatchId = "heatmap-notext-hatch";
+  svg.append("defs").append("pattern").attr("id", hatchId)
+    .attr("patternUnits", "userSpaceOnUse").attr("width", 4).attr("height", 4)
+    .attr("patternTransform", "rotate(45)")
+    .call(p => {{
+      p.append("rect").attr("width", 4).attr("height", 4).attr("fill", "#fde0dd");
+      p.append("line").attr("x1", 0).attr("y1", 0).attr("x2", 0).attr("y2", 4)
+        .attr("stroke", "#a50f15").attr("stroke-width", 1.5);
+    }});
 
   // Row labels.
   svg.append("g").selectAll("text").data(rows).enter().append("text")
@@ -1833,15 +2139,18 @@ function renderHeatmap() {{
     .attr("x", LEFT - 6).attr("y", (_, i) => TOP + (i + 0.7) * cellH)
     .attr("text-anchor", "end")
     .text(d => d.name)
-    .append("title").text(d => d.id + "  total verses: " + (totalVerses.get(d.id) || 0));
+    .append("title").text(d => d.id + "  total words: " + (totalWords.get(d.id) || 0));
 
   // Cells.
   const cellsData = [];
   rows.forEach((c, ri) => {{
     segs.forEach((s, ci) => {{
       const present = (s.characters || []).indexOf(c.id) !== -1;
-      const verses = (s.verses_by_speaker || {{}})[c.id] || 0;
-      cellsData.push({{c: c, s: s, ri: ri, ci: ci, present: present, verses: verses}});
+      const words = (s.words_by_speaker || {{}})[c.id] || 0;
+      // The <sp>, not the word count, decides whether a character spoke.
+      const speaks = (s.speakers || []).indexOf(c.id) !== -1;
+      cellsData.push({{c: c, s: s, ri: ri, ci: ci, present: present,
+                       words: words, speaks: speaks}});
     }});
   }});
   // Persistent column-stripe rect; positioned and shown on hover, hidden
@@ -1863,11 +2172,13 @@ function renderHeatmap() {{
     .attr("height", cellH - 0.5)
     .attr("fill", d => {{
       if (!d.present) return "transparent";
-      if (d.verses === 0) return colourSilent;
-      return colourSpeaking(redScale(d.verses));
+      if (d.words > 0) return colourSpeaking(redScale(d.words));
+      if (d.speaks) return "url(#" + hatchId + ")";
+      return colourSilent;
     }})
     .on("click", (_, d) => {{
       STATE.segmentIdx = d.s.id;
+      _pendingTEISegment = d.s.id;   // also pre-select for the TEI source view
       updateSlider(); renderDynamicGraph(); renderInfo();
       renderHeatmap();  // redraw current-segment outline
     }})
@@ -1892,8 +2203,9 @@ function renderHeatmap() {{
     }})
     .append("title").text(d => {{
       const status = !d.present ? "absent"
-        : d.verses === 0 ? "present (silent)"
-        : (d.verses + " verse" + (d.verses === 1 ? "" : "s"));
+        : d.words > 0 ? (d.words + " word" + (d.words === 1 ? "" : "s"))
+        : d.speaks ? "performs, text not transmitted"
+        : "present (silent)";
       return d.c.name + "  -  segment " + d.s.id + " (" + d.s.label + ")  -  " + status;
     }});
 
@@ -1903,33 +2215,36 @@ function renderHeatmap() {{
   // follows the mute-mode radio and the partOf aggregation toggle.
   // Two readings of the same heatmap:
   //   - co-presence: a pair (a,b) forms an edge iff both are coloured in
-  //     some column (red OR grey).  This is what the dialogic / stage
-  //     network does.
-  //   - co-speech: a pair (a,b) forms an edge iff both are RED in some
-  //     column.  This is what the cospeech network does.
+  //     some column (red OR grey).  This is what stage co-presence and
+  //     the play-level model do.
+  //   - speaking cast: a pair (a,b) forms an edge iff both are RED in some
+  //     column.  This is what the s-speaking network does.
   // -------------------------------------------------------------------
   let nRed = 0, nGray = 0;
   const presPairs = new Set();
   const coSpkPairs = new Set();
+  const partOf = partOfMap();
   segs.forEach(s => {{
     const colored = [];   // chars present (red or grey) in this segment
-    const speaking = [];  // chars red (verses > 0) in this segment
+    const speaking = [];  // chars red (words > 0) in this segment
     rows.forEach(c => {{
       const present = (s.characters || []).indexOf(c.id) !== -1;
       if (!present) return;
-      const verses = (s.verses_by_speaker || {{}})[c.id] || 0;
-      if (verses > 0) {{ nRed++; colored.push(c.id); speaking.push(c.id); }}
+      const words = (s.words_by_speaker || {{}})[c.id] || 0;
+      if (words > 0) {{ nRed++; colored.push(c.id); speaking.push(c.id); }}
       else {{ nGray++; colored.push(c.id); }}
     }});
     for (let i = 0; i < colored.length; i++) {{
       for (let j = i + 1; j < colored.length; j++) {{
         const a = colored[i], b = colored[j];
+        if (oneBody(partOf, a, b)) continue;
         presPairs.add(a < b ? a + "|" + b : b + "|" + a);
       }}
     }}
     for (let i = 0; i < speaking.length; i++) {{
       for (let j = i + 1; j < speaking.length; j++) {{
         const a = speaking[i], b = speaking[j];
+        if (oneBody(partOf, a, b)) continue;
         coSpkPairs.add(a < b ? a + "|" + b : b + "|" + a);
       }}
     }}
@@ -1965,11 +2280,11 @@ function renderHeatmap() {{
       + '</div>'
       + '<div class="group">'
         + '<div class="group-title">Network readings (' + fmt(nNodes) + ' nodes)</div>'
-        + '<div class="row"><span class="key">co-presence rule (any coloured pair)</span>'
+        + '<div class="row"><span class="key">on-stage cast (any coloured pair)</span>'
             + '<span class="val">' + fmt(ePres) + ' edges</span></div>'
         + '<div class="row"><span class="key" style="padding-left:14px">density &middot; &lang;k&rang;</span>'
             + '<span class="val">' + densP + ' &middot; ' + kP + '</span></div>'
-        + '<div class="row"><span class="key">co-speech rule (red pair only)</span>'
+        + '<div class="row"><span class="key">speaking cast (red pair only)</span>'
             + '<span class="val">' + fmt(eSpk) + ' edges</span></div>'
         + '<div class="row"><span class="key" style="padding-left:14px">density &middot; &lang;k&rang;</span>'
             + '<span class="val">' + densS + ' &middot; ' + kS + '</span></div>'
@@ -2020,14 +2335,29 @@ function setupControls() {{
   const toggleHeatmapFullscreen = wireFullscreen(
     "heatmap-panel", "heatmap-fullscreen-btn", "heatmap-fullscreen",
     () => {{ renderHeatmap(); }});
+  const toggleSizeFullscreen = wireFullscreen(
+    "size-panel", "size-fullscreen-btn", "size-fullscreen",
+    () => {{ renderSizeChart(); }});
+  const toggleWordFullscreen = wireFullscreen(
+    "word-panel", "word-fullscreen-btn", "word-fullscreen",
+    () => {{ renderWordChart(); }});
+  const toggleBeatFullscreen = wireFullscreen(
+    "beat-panel", "beat-fullscreen-btn", "beat-fullscreen",
+    () => {{ renderBeatChart(); }});
   document.addEventListener("keydown", (e) => {{
     if (e.key !== "Escape") return;
     const dyn = document.getElementById("dynamic-panel");
     const sta = document.getElementById("static-panel");
     const heat = document.getElementById("heatmap-panel");
+    const sz = document.getElementById("size-panel");
+    const wd = document.getElementById("word-panel");
+    const bt = document.getElementById("beat-panel");
     if (dyn && dyn.classList.contains("dyn-fullscreen")) toggleDynFullscreen(false);
     else if (sta && sta.classList.contains("static-fullscreen")) toggleStaticFullscreen(false);
     else if (heat && heat.classList.contains("heatmap-fullscreen")) toggleHeatmapFullscreen(false);
+    else if (sz && sz.classList.contains("size-fullscreen")) toggleSizeFullscreen(false);
+    else if (wd && wd.classList.contains("word-fullscreen")) toggleWordFullscreen(false);
+    else if (bt && bt.classList.contains("beat-fullscreen")) toggleBeatFullscreen(false);
   }});
 
   // Heatmap row-order dropdown.
@@ -2143,8 +2473,8 @@ function setupControls() {{
     r.addEventListener("change", (e) => {{
       if (!e.target.checked) return;
       STATE.muteMode = e.target.value;
-      // The model switch can change the node set (dialogic, cospeech)
-      // and the edge rule (cospeech).  Invalidate cached layout and
+      // The model switch can change the node set (p-speaking, s-speaking)
+      // and the segment cast (s-speaking).  Invalidate cached layout and
       // reset the slider so the new graph renders cleanly.
       STATE.positions = null;
       STATE.segmentIdx = -1;
@@ -2156,6 +2486,11 @@ function setupControls() {{
     STATE.showLabels = e.target.checked;
     d3.selectAll("#static-graph .node text, #dynamic-graph .node text")
       .attr("display", STATE.showLabels ? null : "none");
+  }});
+  // X-axis mode toggle for the beat chart only.
+  document.getElementById("chart-xmode").addEventListener("change", (e) => {{
+    STATE.chartXMode = e.target.checked ? "word" : "segment";
+    renderBeatChart();
   }});
 
   // One independent checkbox per partOf group declared on this play.
@@ -2198,7 +2533,7 @@ function render() {{
   renderKPIs();
   renderStaticGraph();
   renderSizeChart();
-  renderVerseChart();
+  renderWordChart();
   renderBeatChart();
   renderCharTable();
   renderTGiniTable();
@@ -2378,7 +2713,7 @@ setupControls();
 renderActiveFilters();
 // Populate the Methods tab's "partOf relations in this play" line.  No
 // effect for the corpus dashboard (which uses the same methods panel but
-// no DATA.play); for per-play, it shows e.g. "chorosAndron, chorosGynaikon
+// no DATA.play); for per-play, it shows e.g. "chorosGeronton, chorosGynaikon
 // partOf choros".
 (function fillAggregationRelations() {{
   const slot = document.getElementById("aggregation-relations");
@@ -2407,6 +2742,7 @@ function updateTopbarHeight() {{
 updateTopbarHeight();
 window.addEventListener('resize', updateTopbarHeight);
 </script>
+<!--FIGURE_EXPORT_JS-->
 </body>
 </html>
 """
@@ -2420,22 +2756,29 @@ def write_dashboard(
     """Render the dashboard HTML for one play and write it to disk."""
     payload = build_dashboard_payload(play, results)
     title = (play.title_en or play.title_grc or play.play_id or "Untitled").strip()
+    # Author and Greek title come from the TEI header: escaped, like the
+    # title, before they reach the page.  The separators are ours.
     subtitle_parts = []
     if play.author:
-        subtitle_parts.append(play.author)
+        subtitle_parts.append(_html_escape(play.author))
     if play.title_grc and play.title_grc != title:
-        subtitle_parts.append(play.title_grc)
-    subtitle_parts.append("&middot; segmentations: " + ", ".join(results.keys()))
+        subtitle_parts.append(_html_escape(play.title_grc))
+    subtitle_parts.append("segmentations: " + ", ".join(results.keys()))
     subtitle = " &middot; ".join(subtitle_parts)
-    data_json = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+    data_json = _json_for_script(payload)
     html = _TEMPLATE.format(
         title=_html_escape(title),
         subtitle=subtitle,
         data_json=data_json,
     )
     # Inject the Methods tab's HTML via plain replace so KaTeX's literal
-    # `{` and `}` don't have to be escaped for `str.format`.
+    # `{` and `}` don't have to be escaped for `str.format`.  The figure
+    # exporter and the inlined d3/KaTeX ride the same mechanism, for the
+    # same reason; the libraries go in last, so no later replace scans them.
     html = html.replace("<!--METHODS_HTML-->", methods_panel_html())
+    html = html.replace(CSS_PLACEHOLDER, figure_export_css())
+    html = html.replace(JS_PLACEHOLDER, figure_export_js())
+    html = html.replace(VENDOR_PLACEHOLDER, vendor_assets_html())
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding="utf-8")
     return out_path
@@ -2444,6 +2787,27 @@ def write_dashboard(
 def _html_escape(s: str) -> str:
     return (s.replace("&", "&amp;").replace("<", "&lt;")
              .replace(">", "&gt;").replace('"', "&quot;").replace("'", "&#39;"))
+
+
+def _json_for_script(payload) -> str:
+    """Serialise `payload` for embedding in an inline <script>.
+
+    JSON quoting does not protect the script element's HTML boundary.  The
+    parser scans for the literal characters `</script` before any JavaScript
+    runs, so a closing tag anywhere in the data ends the element there and
+    turns the rest of the dashboard's code into page text.  The data is not
+    hypothetical: the TEI tab carries the whole source file, comments
+    included, and a comment may legally hold one.
+
+    Escaping the three HTML-significant characters as \\uXXXX leaves the JSON
+    equal as a value and inert as markup.  U+2028 and U+2029 go with them:
+    legal inside a JSON string, and line terminators in JavaScript before
+    ES2019.
+    """
+    out = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+    return (out.replace("<", "\\u003c").replace(">", "\\u003e")
+               .replace("&", "\\u0026")
+               .replace("\u2028", "\\u2028").replace("\u2029", "\\u2029"))
 
 
 __all__ = ["write_dashboard", "build_dashboard_payload"]

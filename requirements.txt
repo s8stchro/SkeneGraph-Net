@@ -1,4 +1,19 @@
 # Core runtime dependencies for SkeneGraph-Net.
-# Tested with Python 3.13.11, lxml 6.0.1, networkx 3.5.
-lxml>=4.9
+# Tested with Python 3.13.11, lxml 6.0.1, networkx 3.5, numpy 2.3.2,
+# scipy 1.16.3.
+# 5.0 is the first lxml whose parser refuses external entities by default;
+# parser.py also asks for that explicitly, in a form older versions misread.
+lxml>=5.0
 networkx>=3.0
+
+# NetworkX declares NumPy and SciPy only under its `default` extra, so
+# `pip install networkx` brings neither.  They are runtime dependencies here,
+# not test ones: `eigenvector_centrality_numpy` is the solver the published
+# figures come from, and `metrics.py` falls back to power iteration when it
+# cannot be imported.  The fallback is silent and its values differ in the
+# sixth decimal -- 2 to 25 characters per play across the corpus -- so a
+# dashboard built without them carries different numbers in `characters.csv`
+# and `metrics.json` with nothing to say why.  The floors are the ones
+# NetworkX 3.5 asks for.
+numpy>=1.25
+scipy>=1.11.2

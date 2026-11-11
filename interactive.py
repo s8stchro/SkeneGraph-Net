@@ -41,13 +41,25 @@ def _ask(prompt: str, options: List[Tuple[str, str]], default: int = 0) -> str:
         print(f"  Please enter a number between 1 and {len(options)}")
 
 
+def _strip_quotes(value: str) -> str:
+    """Drop the enclosing quotes a terminal adds when a path is pasted.
+
+    Windows Explorer's "Copy as path" yields "C:\\...\\play.xml" with the
+    quotes included, and nothing strips them here: the value arrives through
+    input(), not through argv where the shell would have removed them.
+    """
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+        return value[1:-1]
+    return value
+
+
 def _ask_text(prompt: str, default: str = "") -> str:
     """Free-text prompt with optional default."""
     if default:
-        val = input(f"  {prompt} [{default}]: ").strip()
+        val = _strip_quotes(input(f"  {prompt} [{default}]: ").strip())
         return val if val else default
     while True:
-        val = input(f"  {prompt}: ").strip()
+        val = _strip_quotes(input(f"  {prompt}: ").strip())
         if val:
             return val
         print("  This field is required.")
@@ -68,7 +80,7 @@ def _print_header() -> None:
     print("  Network analysis for TEI/XML-encoded drama")
     print("=" * 60)
     print("\n  All methodological toggles (mute mode, partOf aggregation,")
-    print("  segmentation, edge rule) are exposed in the generated dashboard.")
+    print("  segmentation, segment cast) are exposed in the generated dashboard.")
     print("  This prompt only collects the input path.")
 
 
@@ -110,11 +122,8 @@ def _interactive_corpus() -> Optional[dict]:
         # Prompt without using the required-field path of _ask_text: an
         # empty entry is the signal for "done", except on the very first
         # path where we still require at least one entry.
-        raw = input(f"  Path {idx}{' (Enter to finish)' if paths else ''}: ").strip()
-        # Strip enclosing quotes that some terminals add when pasting paths.
-        if raw and ((raw.startswith('"') and raw.endswith('"'))
-                    or (raw.startswith("'") and raw.endswith("'"))):
-            raw = raw[1:-1]
+        raw = _strip_quotes(
+            input(f"  Path {idx}{' (Enter to finish)' if paths else ''}: ").strip())
         if not raw:
             if not paths:
                 print("  Please enter at least one path.")
@@ -166,7 +175,20 @@ def run_interactive() -> Optional[Tuple[str, dict]]:
     `command` is one of "analyze" / "corpus"; `kwargs` is the dict of
     pipeline arguments the caller forwards to `analyze_one` /
     `cmd_corpus`.  Returns None when the user quits or cancels.
+
+    Ctrl-C and end-of-input return None rather than raising: this is the
+    no-subcommand default path, so it is also what runs when the app is
+    started without a terminal attached, and a traceback is the wrong
+    answer to "there is nobody here to ask".
     """
+    try:
+        return _run_interactive()
+    except (EOFError, KeyboardInterrupt):
+        print("\n  Cancelled.")
+        return None
+
+
+def _run_interactive() -> Optional[Tuple[str, dict]]:
     _print_header()
     command = _ask(
         "What would you like to do?",

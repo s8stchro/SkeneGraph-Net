@@ -1,31 +1,37 @@
 """Corpus-level dashboard.
 
 Bundles a one-row-per-play summary (metrics + cast composition + segment
-indices + a compact per-segment beat-rate / size / verse array for overlay
+indices + a compact per-segment beat-rate / size / word array for overlay
 plots) into a single self-contained HTML page.
 
 Layout
 ------
    ┌─────────────────────────────────────────────────────────┐
-   │ Header (corpus name, plays, authors, segmentation tabs)  │
+   │ Header (corpus name, plays, authors; view tabs)         │
    ├─────────────────────────────────────────────────────────┤
-   │ Corpus summary KPIs (totals + means + ranges)            │
-   ├──────────────────────────┬──────────────────────────────┤
-   │ Network-topology scatter │ Trilcke/Fischer typology     │
-   │ density × avg degree     │ drama-change × final-scene   │
+   │ Segmentation tabs, network model, aggregation toggle    │
    ├─────────────────────────────────────────────────────────┤
-   │ Cast composition stacked bars (speakers / mutes …)       │
+   │ Plays included (chip selector, highlights)              │
    ├─────────────────────────────────────────────────────────┤
-   │ Beat-chart small multiples (one per play)                │
+   │ Corpus summary KPIs (totals + means + ranges)           │
+   ├──────────────┬─────────────┬─────────────┬──────────────┤
+   │ density ×    │ avg degree ×│ DCR × σ     │ eff. spk ×   │
+   │ order        │ order       │ (typology)  │ avg degree   │
+   ├──────────────┴─────────────┴─────────────┴──────────────┤
+   │ Cast composition stacked bars (speakers / mutes)        │
    ├─────────────────────────────────────────────────────────┤
-   │ Sortable plays table -- click a row to open per-play     │
-   │ dashboard                                                 │
+   │ Beat-chart small multiples (one per play)               │
+   ├─────────────────────────────────────────────────────────┤
+   │ Chorus presence across the play                         │
+   ├─────────────────────────────────────────────────────────┤
+   │ Sortable plays table -- click a row to open per-play    │
+   │ dashboard                                               │
    └─────────────────────────────────────────────────────────┘
 
 Departures from the per-play dashboard (small but meaningful):
-* No mute-toggle, no force controls, no dynamic graph: this is a
-  comparative view, not a per-play exploration tool.
-* All five panels react to the segmentation tab.
+* No force controls, no dynamic graph: this is a comparative view, not a
+  per-play exploration tool.
+* All panels react to the segmentation tab.
 * Click a play row -> opens its per-play dashboard in the same tab,
   so the corpus dashboard works as a navigation hub.
 """
@@ -38,7 +44,15 @@ from typing import Dict, List
 
 import networkx as nx  # noqa: F401  (re-export of types used by callers)
 
+from aggregation import aggregatable_groups
+from segmentation import active_span
+# One definition of each, shared with the per-play dashboard: an escape
+# applied in one writer and not the other is no protection.
+from dashboard import _html_escape, _json_for_script
+from figure_export import (CSS_PLACEHOLDER, JS_PLACEHOLDER,
+                           figure_export_css, figure_export_js)
 from methods_content import methods_panel_html
+from vendor_assets import PLACEHOLDER as VENDOR_PLACEHOLDER, vendor_assets_html
 
 
 def _attach_agg(block, agg_block):
@@ -52,6 +66,28 @@ def _attach_agg(block, agg_block):
     if block is not None and agg_block is not None:
         block["agg"] = agg_block
     return block
+
+
+def _change_rates(segs, cast):
+    """Beat-chart rates: the Jaccard distance between consecutive casts.
+
+    Returns `(rates, start)`, `start` being the index of the segment the
+    first transition departs from.  The transitions at both brackets are
+    skipped -- out of an empty pre-play segment, and into an empty terminal
+    one after a full exeunt -- each being 1.0 by definition, a cast compared
+    with the empty set.  The per-play page computes the same series in the
+    browser (`segmentChangeRates`).
+    """
+    start = 1 if (segs and segs[0].is_initial and not cast(segs[0])) else 0
+    end = (len(segs) - 2
+           if len(segs) > 1 and segs[-1].is_final and not cast(segs[-1])
+           else len(segs) - 1)
+    rates: List[float] = []
+    for i in range(start, end):
+        a, b = cast(segs[i]), cast(segs[i + 1])
+        u = a | b
+        rates.append(len(a ^ b) / len(u) if u else 0.0)
+    return rates, start
 
 
 def extract_play_summary(
@@ -72,21 +108,26 @@ def extract_play_summary(
     # speakers` ratio counts each chorus once.  Plays with no
     # <listRelation> entries fall back to the top-level (raw) demographics
     # for the given mode.
+    #
+    # The groups come from the one function that decides which variants the
+    # writer builds; a list re-derived here could name a key never built,
+    # and the lookups below would fall back to raw data without a word.  An
+    # empty agg_key means the play has nothing to aggregate.
+    agg_key = ",".join(aggregatable_groups(play))
+
     def _pick_demographics(mute_mode: str) -> Dict:
         if not results:
             return {}
         any_mode = next(iter(results.values()))
-        groups = sorted({r.passive for r in play.relations
-                         if r.name == "partOf" and r.passive in play.characters})
-        target_key = f"{mute_mode}:" + ",".join(groups) if groups else None
+        target_key = f"{mute_mode}:{agg_key}" if agg_key else None
         variants = any_mode.get("variants") or {}
         if target_key and target_key in variants:
             return variants[target_key]["metrics"].get("demographics", {})
         # No partOf aggregation possible.  Fall back to the appropriate
-        # top-level demographics: for "stage" that's the raw metrics;
-        # for "dialogic" / "cospeech" that's variants["dialogic:"] /
-        # variants["cospeech:"] respectively.
-        if mute_mode != "stage":
+        # top-level demographics: for "full" that's the raw metrics;
+        # for "p-speaking" / "s-speaking" that's variants["p-speaking:"] /
+        # variants["s-speaking:"] respectively.
+        if mute_mode != "full":
             v = variants.get(f"{mute_mode}:")
             if v is not None:
                 return v["metrics"].get("demographics", {})
@@ -97,7 +138,8 @@ def extract_play_summary(
         mutes = dem.get("mutes", 0)
         total = speakers + mutes
         coll_spk = dem.get("collective_speakers", 0)
-        sx = dem.get("sex", {"male": 0, "female": 0, "unspecified": 0})
+        sx = dem.get("sex", {"male": 0, "female": 0, "mixed": 0,
+                             "unspecified": 0})
         female = sx.get("female", 0)
         male = sx.get("male", 0)
         return {
@@ -107,20 +149,19 @@ def extract_play_summary(
         }
 
     composition = {
-        "stage":    _ratios(_pick_demographics("stage")),
-        "dialogic": _ratios(_pick_demographics("dialogic")),
-        "cospeech": _ratios(_pick_demographics("cospeech")),
+        "full":    _ratios(_pick_demographics("full")),
+        "p-speaking": _ratios(_pick_demographics("p-speaking")),
+        "s-speaking": _ratios(_pick_demographics("s-speaking")),
     }
 
-    # Genre heuristic by author + play id (the id carries the Latin
-    # transliteration even when <author> is in Greek script).  Stand-in
-    # for a TEI <classCode> until the corpus annotates genre explicitly.
-    # Used by the corpus chorus beat chart to sort plays as
-    # genre -> author -> title.  Recognises both Latin transliterations
-    # and the Greek-script canonical forms; unknown authors collapse to
-    # "other", sorted last.
-    def _genre_of(author: str, play_id: str) -> str:
-        a = ((author or "") + " " + (play_id or "")).lower()
+    # Genre.  Read from the TEI header when the play declares one
+    # (<textClass><catRef scheme="#genre" .../></textClass>); the author
+    # heuristic below is the fallback for files not yet classified.  Used
+    # by the corpus chorus beat chart to sort plays as
+    # genre -> author -> title; unknown authors collapse to "other",
+    # sorted last.
+    def _genre_of(author: str) -> str:
+        a = (author or "").lower()
         comedy_keys = (
             # Latin / English transliterations
             "aristophanes", "menander", "plautus", "terence",
@@ -142,8 +183,11 @@ def extract_play_summary(
         "id": play.play_id or "",
         "title_en": play.title_en or "",
         "title_grc": play.title_grc or "",
+        "title_lat": play.title_lat or "",
+        "title_lat_abbr": play.title_lat_abbr or "",
         "author": play.author or "",
-        "genre": _genre_of(play.author or "", play.play_id or ""),
+        "author_lat_abbr": play.author_lat_abbr or "",
+        "genre": play.genre or _genre_of(play.author or ""),
         "dashboard_href": dashboard_href,
         "composition": composition,
         "segmentations": {},
@@ -152,29 +196,13 @@ def extract_play_summary(
         m = r["metrics"]
         segs = r["segments"]
 
-        # Beat-chart rates (Jaccard distance between consecutive casts).
-        # Skip the artificial transition from an empty pre-play segment 0
-        # (always 1.0 by definition, omitted in Fischer/Trilcke 2017 Fig. 4).
-        def jaccard_series(cast_fn):
-            start_i = (1 if (segs and segs[0].is_initial and not cast_fn(segs[0])) else 0)
-            out: List[float] = []
-            for i in range(start_i, len(segs) - 1):
-                a, b = cast_fn(segs[i]), cast_fn(segs[i + 1])
-                u = a | b
-                out.append((len(a ^ b) / len(u)) if u else 0.0)
-            return out
-
-        rates_stage = jaccard_series(lambda s: s.characters_present)
-        verses_per_segment = [s.verse_count for s in segs]
-
-        # partOf groups for this play (chorus semi-choruses etc.).  The
-        # fully-aggregated variant key joins every group id; an empty
-        # agg_key means the play has no aggregable groups, so no agg view
-        # exists.  Computed once here because both the demographics picker
-        # and the mode blocks below need it.
-        groups = sorted({rel.passive for rel in play.relations
-                         if rel.name == "partOf" and rel.passive in play.characters})
-        agg_key = ",".join(groups) if groups else ""
+        # Beat-chart rates.  The start index -- the segment the series' first
+        # transition departs from -- is shipped so the word-mode x-placement
+        # never has to reconstruct the offset from length arithmetic
+        # (impossible now that the trailing bracket is excluded too).
+        rates_stage, rates_stage_start = _change_rates(
+            segs, lambda s: s.characters_present)
+        words_per_segment = [s.word_count for s in segs]
 
         # Build one "mode block" per (mute mode, aggregation state) -- same
         # field shape as the top-level (stage-mode raw) fields, so the JS
@@ -183,10 +211,14 @@ def extract_play_summary(
         # node); change rates, per-segment series, speech distribution and
         # segment indices are all taken from that variant so order,
         # density, DCR, Gini and the beat-chart series reflect the
-        # collapse.  For the raw blocks speech_distribution / segment_indices
-        # are play-level constants shared from the stage view (the cast
-        # filter does not change which characters speak), preserving the
-        # existing dialogic / cospeech behaviour exactly.
+        # collapse.  For the raw blocks speech_distribution stays a
+        # play-level constant shared from the stage view (the cast filter
+        # does not change which characters speak); segment_indices, by
+        # contrast, are computed per model -- the pipeline hands both of the
+        # model's axes, its node set and its segment cast, to
+        # compute_segment_indices, so they are read on the same cast as the
+        # beat-chart series below -- so every block, raw or aggregated, keeps
+        # its own.
         def _build_mode_block(mute_mode: str, agg: bool = False):
             if agg and not agg_key:
                 return None  # nothing to aggregate -> no agg view
@@ -198,30 +230,28 @@ def extract_play_summary(
             mo_segs = v["segments"]
             # Cast rule per mute mode, applied to this variant's own
             # segments (which already reflect the aggregation when agg).
-            if mute_mode == "cospeech":
+            if mute_mode == "s-speaking":
                 cast = lambda s: s.speakers
-            elif mute_mode == "dialogic":
+            elif mute_mode == "p-speaking":
                 kept = {n["id"] for n in mo.get("nodes", [])}
                 cast = lambda s: s.characters_present & kept
             else:  # stage
                 cast = lambda s: s.characters_present
-            start_i = (1 if (mo_segs and mo_segs[0].is_initial
-                             and not cast(mo_segs[0])) else 0)
-            seg_change = []
-            for i in range(start_i, len(mo_segs) - 1):
-                a, b = cast(mo_segs[i]), cast(mo_segs[i + 1])
-                u = a | b
-                seg_change.append((len(a ^ b) / len(u)) if u else 0.0)
+            seg_change, start_i = _change_rates(mo_segs, cast)
             size_per_seg = [len(cast(s)) for s in mo_segs]
-            # Aggregation merges chorus-half speaker identities, so the
-            # verse distribution and segment-occupancy indices change; take
-            # them from the variant.  Raw blocks keep the shared stage view.
-            if agg:
-                speech_dist = mo.get("speech_distribution", m.get("speech_distribution", {}))
-                seg_idx     = mo.get("segment_indices", m.get("segment_indices", {}))
-            else:
-                speech_dist = m.get("speech_distribution", {})
-                seg_idx     = m.get("segment_indices", {})
+            # Always the variant's own speech_distribution, never the stage
+            # view's.  Four of its fields are play-level constants (gini_words,
+            # top_speaker_id, top_speaker_word_share, total_words_spoken) and
+            # are identical in every variant, so sharing them was harmless.
+            # The other two are segment-axis dependent -- app.py adds
+            # `top_speaker_temporal_gini` and `n_active_segments` from
+            # compute_temporal_gini(segments) -- and under `sd` the mutes-out
+            # spine is folded (fold_segments), so they genuinely differ per
+            # mute mode.  Reading them from the stage view put the unfolded
+            # value next to this block's folded num_segments and disagreed
+            # with the per-play dashboard.
+            speech_dist = mo.get("speech_distribution", m.get("speech_distribution", {}))
+            seg_idx = mo.get("segment_indices", m.get("segment_indices", {}))
             return {
                 "size":               mo["size"],
                 "numEdges":           mo["numEdges"],
@@ -238,15 +268,16 @@ def extract_play_summary(
                 "speech_distribution": speech_dist,
                 "segment_indices":     seg_idx,
                 "change_rates":       seg_change,
+                "change_rates_start": start_i,
                 "size_per_segment":   size_per_seg,
-                "verses_per_segment": [s.verse_count for s in mo_segs],
+                "words_per_segment": [s.word_count for s in mo_segs],
             }
 
         # Chorus beat-chart data for the corpus chart.  One row per
         # chorus character per (mute_mode, agg_state) combination.  Read
         # the chorus character list from each variant's character set
         # (filtered by is_chorus), then for each chorus character emit
-        # its per-segment verses + presence within that variant's segments.
+        # its per-segment words + presence within that variant's segments.
         #
         # Trim leading and trailing segments that have an empty cast at
         # the play level (the sd segmenter emits an empty terminal
@@ -264,41 +295,38 @@ def extract_play_summary(
                             if getattr(ch, "is_chorus", False)]
             if not chorus_chars or not variant_segments:
                 return []
-            n_all = len(variant_segments)
-            lo, hi = 0, n_all
-            while lo < hi and not variant_segments[lo].characters_present:
-                lo += 1
-            while hi > lo and not variant_segments[hi - 1].characters_present:
-                hi -= 1
-            active = variant_segments[lo:hi]
+            active = active_span(variant_segments)
             out = []
             for cid, ch in chorus_chars:
-                verses = []
+                words = []
                 present = []
+                speaks = []
                 for s in active:
-                    vbs = {}
-                    for sp in s.speeches:
-                        if sp.verse_count > 0:
-                            for who in sp.who:
-                                vbs[who] = vbs.get(who, 0) + sp.verse_count
-                    verses.append(vbs.get(cid, 0))
+                    words.append(sum(sp.word_count for sp in s.speeches
+                                     if cid in sp.who))
                     present.append(cid in s.characters_present)
+                    # Follows the <sp>, not the word count, as everywhere
+                    # else in the app: a choral song whose text is not
+                    # transmitted (the XOPOY interludes) was performed, and
+                    # is not silence.
+                    speaks.append(cid in s.speakers)
                 out.append({
                     "id":      cid,
                     "name":    ch.display_name,
-                    "verses":  verses,
+                    "words":   words,
                     "present": present,
+                    "speaks":  speaks,
                 })
             return out
 
         # Resolve the six (mute_mode, agg_state) variants.  Top-level
         # results carry the stage-mode raw view; r["variants"] carries
-        # dialogic, cospeech, and all partOf-aggregated variants.  When
+        # p-speaking, s-speaking, and all partOf-aggregated variants.  When
         # a play has no partOf groups, the agg view falls back to the
         # raw view of the same mute mode.
         v = r.get("variants") or {}
         def _resolve(mute, agg):
-            if mute == "stage" and not agg:
+            if mute == "full" and not agg:
                 return {"characters": play.characters, "segments": segs}
             key = f"{mute}:{agg_key}" if agg else f"{mute}:"
             entry = v.get(key)
@@ -306,7 +334,7 @@ def extract_play_summary(
                 return {"characters": entry["play"].characters,
                         "segments":   entry["segments"]}
             # Fall back to raw view at this mute mode (if not stage).
-            if mute != "stage":
+            if mute != "full":
                 fb = v.get(f"{mute}:")
                 if fb:
                     return {"characters": fb["play"].characters,
@@ -314,7 +342,7 @@ def extract_play_summary(
             return {"characters": play.characters, "segments": segs}
 
         chorus_data = {}
-        for mute in ("stage", "dialogic", "cospeech"):
+        for mute in ("full", "p-speaking", "s-speaking"):
             for agg in (False, True):
                 vd = _resolve(mute, agg)
                 chorus_data[f"{mute}_{'agg' if agg else 'raw'}"] = _chorus_rows(
@@ -336,8 +364,9 @@ def extract_play_summary(
             "speech_distribution": m.get("speech_distribution", {}),
             "segment_indices":    m.get("segment_indices", {}),
             "change_rates":       rates_stage,
+            "change_rates_start": rates_stage_start,
             "size_per_segment":   [len(s.characters_present) for s in segs],
-            "verses_per_segment": verses_per_segment,
+            "words_per_segment": words_per_segment,
             # Non-default mute modes as sub-dicts.  Each carries the
             # same field shape as the top-level fields (which are the
             # stage-mode view), so the JS segOf(p) can swap the active
@@ -350,11 +379,11 @@ def extract_play_summary(
             # its agg counterpart under the "agg" key.  `agg` is absent
             # for plays without aggregable groups, so segOf falls back to
             # the raw block.
-            "dialogic":           _attach_agg(_build_mode_block("dialogic"),
-                                              _build_mode_block("dialogic", agg=True)),
-            "cospeech":           _attach_agg(_build_mode_block("cospeech"),
-                                              _build_mode_block("cospeech", agg=True)),
-            "agg":                _build_mode_block("stage", agg=True),
+            "p-speaking":           _attach_agg(_build_mode_block("p-speaking"),
+                                              _build_mode_block("p-speaking", agg=True)),
+            "s-speaking":           _attach_agg(_build_mode_block("s-speaking"),
+                                              _build_mode_block("s-speaking", agg=True)),
+            "agg":                _build_mode_block("full", agg=True),
             "chorus_data":        chorus_data,
         }
     return summary
@@ -369,10 +398,7 @@ _TEMPLATE = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <title>{title} - SkeneGraph-Net corpus</title>
-<script src="https://d3js.org/d3.v7.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<!--VENDOR_ASSETS-->
 <style>
 :root {{
   --bg: #fafafa; --panel: #ffffff; --border: #e0e0e0;
@@ -380,6 +406,9 @@ _TEMPLATE = """<!DOCTYPE html>
   --speaker: #e07a5f; --mute: #aaa; --chorus: #4daf4a;
   --collective: #377eb8; --beat: #b73779;
   --tragedy: #1f78b4; --comedy: #e31a1c;
+  /* Highlight ring on the scatters: orange, the complement of the blue dots
+     and well clear of the red pair-lines. */
+  --highlight: #f08c00;
 }}
 * {{ box-sizing: border-box; }}
 html, body {{ margin: 0; padding: 0; background: var(--bg); color: var(--ink);
@@ -497,8 +526,8 @@ main {{ padding: 12px 16px; }}
   text-align: right; white-space: nowrap; }}
 .metrics-list dd .alt {{ display: block; font-size: 11px; font-weight: 400;
   color: #999; margin-top: -1px; }}
-#sizing-chart, #scaling-chart, #topology-chart, #typology-chart,
-#gini-avgdeg-chart, #share-gini-chart, #share-avgdeg-chart {{
+#sizing-chart, #scaling-chart, #typology-chart,
+#esp-avgdeg-chart {{
   width: 100%; height: 360px; }}
 #composition-chart {{ width: 100%; height: 360px; }}
 #chorus-beat-chart {{ width: 100%; display: block; }}
@@ -527,28 +556,18 @@ main {{ padding: 12px 16px; }}
 .selector-chips .chip-toggle:hover.off {{ background: #ebebeb; color: #555;
   text-decoration: none; }}
 .selector-chips .chip-toggle .mark {{ font-size: 10px; opacity: 0.8; }}
-/* Anchor / display-only / color-dot extensions to the chip control.
-   An "anchor" chip contributes to the corpus median computations;
-   a "display-only" chip is visible on the chart but is excluded from
-   the median and the iso-curve.  Visual distinction: display-only is
-   italic + light opacity + no anchor glyph.  The colour dot inside
-   each chip controls the play's dot colour in the scatters; click it
-   to cycle through the palette without changing the chip's state. */
-.selector-chips .chip-toggle .anchor-mark {{ font-size: 9.5px;
-  margin-right: 2px; opacity: 0.85; }}
-.selector-chips .chip-toggle.display-only {{ background: #f4f4f4;
-  color: #6b6b6b; border-color: #d4d4d4; font-style: italic; }}
-.selector-chips .chip-toggle.display-only:hover {{ background: #ebebeb;
-  color: #4a4a4a; }}
-.selector-chips .chip-toggle.display-only .anchor-mark {{ display: none; }}
-.selector-chips .chip-toggle .color-dot {{ display: inline-block;
+/* The highlight dot inside each chip: a hollow ring, filled with the
+   highlight colour when the play is highlighted.  Click it to toggle the
+   highlight without changing whether the play is included. */
+.selector-chips .chip-toggle .hl-dot {{ display: inline-block;
   width: 9px; height: 9px; border-radius: 50%; margin: 0 4px 0 1px;
-  cursor: pointer; border: 1px solid rgba(0,0,0,0.25);
+  cursor: pointer; border: 1.5px solid rgba(255,255,255,0.85);
+  background: transparent; box-sizing: border-box;
   vertical-align: middle; transition: transform 0.08s; }}
-.selector-chips .chip-toggle .color-dot:hover {{ transform: scale(1.35);
-  border-color: #000; }}
-/* Subset toolbar appendix: anchor-only quick action */
-.selector-bar .actions button.anchors-btn {{ background: #f5f5f5; }}
+.selector-chips .chip-toggle .hl-dot.on {{ background: var(--highlight);
+  border-color: white; }}
+.selector-chips .chip-toggle.off .hl-dot {{ border-color: #bbb; }}
+.selector-chips .chip-toggle .hl-dot:hover {{ transform: scale(1.35); }}
 /* Sticky behaviour for the Plays-included panel: pinned just below the
    segmentation-tabs row, so toggling stays in reach while the user
    scrolls through scatters, tables, and beat charts.  Background is
@@ -574,15 +593,21 @@ main {{ padding: 12px 16px; }}
 .chorus-controls .legend-inline .swatch-grey {{ display: inline-block;
   width: 10px; height: 10px; vertical-align: middle; margin-right: 3px;
   background: #bbbbbb; border: 1px solid #ddd; }}
+/* Same hatch as the chart's text-not-transmitted cells. */
+.chorus-controls .legend-inline .swatch-hatch {{ display: inline-block;
+  width: 10px; height: 10px; vertical-align: middle; margin-right: 3px;
+  background: repeating-linear-gradient(45deg, #a50f15 0 1.5px,
+                                        #fde0dd 1.5px 4px);
+  border: 1px solid #ddd; }}
 .small-multiples {{ display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 8px; }}
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 10px; }}
 .small-multiples .sm {{ background: #fafafa; border: 1px solid #f0f0f0;
   border-radius: 3px; padding: 4px 6px; }}
 .small-multiples .sm .title {{ font-size: 11px; color: var(--muted);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   margin-bottom: 2px; }}
-.small-multiples .sm svg {{ width: 100%; height: 80px; display: block; }}
+.small-multiples .sm svg {{ width: 100%; height: 110px; display: block; }}
 table {{ width: 100%; border-collapse: separate; border-spacing: 0;
   font-size: 12px; }}
 th, td {{ padding: 4px 8px; text-align: left; border-bottom: 1px solid #f0f0f0; }}
@@ -608,11 +633,8 @@ td.num, th.num {{ text-align: right; font-variant-numeric: tabular-nums; }}
    intrinsic vertical content, so we set height explicitly). */
 .panel.graph.chart-fullscreen #sizing-chart,
 .panel.graph.chart-fullscreen #scaling-chart,
-.panel.graph.chart-fullscreen #topology-chart,
 .panel.graph.chart-fullscreen #typology-chart,
-.panel.graph.chart-fullscreen #gini-avgdeg-chart,
-.panel.graph.chart-fullscreen #share-gini-chart,
-.panel.graph.chart-fullscreen #share-avgdeg-chart,
+.panel.graph.chart-fullscreen #esp-avgdeg-chart,
 .panel.graph.chart-fullscreen #composition-chart {{
   width: 100%; height: calc(100vh - 270px); max-width: none; }}
 /* Chorus-beat chart: set its own height in JS (rows × rowH), but let
@@ -634,7 +656,14 @@ td.num, th.num {{ text-align: right; font-variant-numeric: tabular-nums; }}
 .chart-fullscreen #plays-selector {{ max-height: 64px; overflow-y: auto; }}
 /* Beat-multiples grid expands naturally via grid auto-fit; the small
    svgs scale themselves via clientWidth.  Re-render on fullscreen
-   toggle picks up the new container width. */
+   toggle picks up the new container width.  In fullscreen we widen and
+   heighten each cell substantially so every segment-transition is legible
+   — important in word-position mode, where dense plays pack many vertices
+   into the line. */
+.panel.graph.chart-fullscreen .small-multiples {{
+  grid-template-columns: repeat(auto-fit, minmax(520px, 1fr)); gap: 16px; }}
+.panel.graph.chart-fullscreen .small-multiples .sm svg {{ height: 170px; }}
+.panel.graph.chart-fullscreen .small-multiples .sm .title {{ font-size: 13px; }}
 
 /* Network-model radio fieldset.  Compact, inline with the segmentation
    tabs.  Three options stacked horizontally with subtle group framing
@@ -659,8 +688,7 @@ tr.row-link {{ cursor: pointer; }}
 tr.row-link:hover td {{ background: #fffce8; }}
 .scroll {{ max-height: 520px; overflow-y: auto; }}
 text {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }}
-/* Default stroke / stroke-width come from drawScatter's attr() calls so that
-   flagged (out-of-iso-domain) points can stroke themselves in --accent.
+/* Default stroke / stroke-width come from drawScatter's attr() calls.
    The :hover rule still wins (CSS > presentation attribute) on hover. */
 .dot {{ cursor: pointer; }}
 .dot:hover {{ stroke: black !important; stroke-width: 1.8; }}
@@ -669,6 +697,7 @@ text {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 .legend .swatch {{ display: inline-block; width: 10px; height: 10px;
   vertical-align: middle; margin-right: 3px; border-radius: 2px; }}
 </style>
+<!--FIGURE_EXPORT_CSS-->
 </head>
 <body>
 <div class="topbar">
@@ -687,14 +716,14 @@ text {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
     <span class="label">all panels react to the segmentation tab</span>
     <fieldset class="mute-mode-radio" style="margin-left: 16px;">
       <legend>Network model:</legend>
-      <label><input type="radio" name="mute-mode" value="stage" checked>
+      <label><input type="radio" name="mute-mode" value="full" checked>
         stage co-presence
         <span class="detail">(all on-stage characters as nodes)</span></label>
-      <label><input type="radio" name="mute-mode" value="dialogic">
-        dialogic cast on play level
+      <label><input type="radio" name="mute-mode" value="p-speaking">
+        speaking cast on play level
         <span class="detail">(drop play-level mutes)</span></label>
-      <label><input type="radio" name="mute-mode" value="cospeech">
-        dialogic cast on segment level
+      <label><input type="radio" name="mute-mode" value="s-speaking">
+        speaking cast on segment level
         <span class="detail">(only segment-active speakers)</span></label>
     </fieldset>
     <label class="agg-toggle" style="margin-left: 12px;">
@@ -706,7 +735,7 @@ text {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   <div class="panel sticky-selector" id="plays-selector-panel">
     <h3>Plays included
       <span class="hint">toggle chips to include / exclude plays &middot;
-        all panels, scatters, tables, and reference curves recompute against
+        all panels, scatters, tables, and median crosshairs recompute against
         the active subset</span>
     </h3>
     <div class="selector-bar">
@@ -715,13 +744,13 @@ text {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
         <button id="sel-all">select all</button>
         <button id="sel-none">select none</button>
         <button id="sel-invert">invert</button>
-        <button id="reset-colors" title="reset all per-play dot colours to default">reset colours</button>
+        <button id="clear-highlights" title="remove every highlight">clear highlights</button>
       </span>
     </div>
     <div id="plays-selector" class="selector-chips"></div>
   </div>
 
-  <div class="panel">
+  <div class="panel" data-comparison-export>
     <h3>Corpus summary</h3>
     <div id="kpis"></div>
   </div>
@@ -729,10 +758,13 @@ text {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   <div class="row charts">
     <div class="panel graph">
       <h3>Density &times; order
-        <span class="hint">dashed deep red = iso-degree curve at the corpus median &lang;k&rang;
-          &middot; red lines = pairs with &Delta;n &le; 5 (local-neighbourhood density variation)
+        <span class="hint">red lines = pairs with &Delta;n &le; 5 (local-neighbourhood density variation)
           <label style="margin-left: 8px;">
-            <input type="checkbox" id="show-pair-lines" checked> show pair-lines
+            <input type="checkbox" id="show-pair-lines"> show pair-lines
+          </label>
+          <label style="margin-left: 8px;"
+                 title="tone = how many others a character shares the stage with, on average">
+            <input type="checkbox" id="tone-by-degree"> colour by average degree
           </label>
         </span>
       </h3>
@@ -745,34 +777,16 @@ text {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
       <svg id="scaling-chart"></svg>
     </div>
     <div class="panel graph">
-      <h3>Density &times; average degree
-        <span class="hint">density = avg-deg / (n &minus; 1); the curve = order</span>
-      </h3>
-      <svg id="topology-chart"></svg>
-    </div>
-    <div class="panel graph">
       <h3>Drama-dynamics typology
-        <span class="hint">drama-change rate &times; &sigma; &middot; Fischer / Trilcke 2017, Fig. 8-9 (high- vs low-dynamic plays)</span>
+        <span class="hint">drama-change rate &times; &sigma; &middot; Fischer et al. 2017, Figs. 8&ndash;9 (high- vs low-dynamic plays)</span>
       </h3>
       <svg id="typology-chart"></svg>
     </div>
     <div class="panel graph">
-      <h3>Gini &times; average degree
-        <span class="hint">speech inequality &times; network density &middot; star vs ensemble dramaturgies</span>
+      <h3>Effective speakers &times; average degree
+        <span class="hint">how many voices carry the play &times; how many others a character meets</span>
       </h3>
-      <svg id="gini-avgdeg-chart"></svg>
-    </div>
-    <div class="panel graph">
-      <h3>Top-speaker share &times; Gini
-        <span class="hint">lead dominance &times; full-distribution inequality &middot; star vs coalitional vs ensemble</span>
-      </h3>
-      <svg id="share-gini-chart"></svg>
-    </div>
-    <div class="panel graph">
-      <h3>Top-speaker share &times; average degree
-        <span class="hint">lead dominance &times; network density &middot; do single-hero plays sit on sparser networks?</span>
-      </h3>
-      <svg id="share-avgdeg-chart"></svg>
+      <svg id="esp-avgdeg-chart"></svg>
     </div>
   </div>
 
@@ -791,6 +805,10 @@ text {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
     <h3>Beat-chart small multiples
       <span class="hint">segment-change rate per play (orange line = drama-change rate)</span>
     </h3>
+    <label style="font-size:11px; color:var(--muted); display:flex; align-items:center; gap:6px; cursor:pointer; margin: 0 0 10px;">
+      <input type="checkbox" id="beat-xmode"> space x-axis by word position
+      <span style="opacity:0.8;">(transitions placed at their stage-time, not evenly)</span>
+    </label>
     <div id="beat-multiples" class="small-multiples"></div>
   </div>
 
@@ -801,8 +819,11 @@ text {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
     </h3>
     <div class="chorus-controls">
       <span class="legend-inline">
-        <span><span class="swatch-grey"></span>present, silent</span>
-        <span><span class="swatch-gradient"></span>speaking (verses, &radic; scale)</span>
+        <span><span class="swatch-grey" data-swatch="solid"></span>present, silent</span>
+        <span><span class="swatch-hatch" data-swatch="hatch"
+                    data-colors="#a50f15 #fde0dd"></span>performs, text not transmitted</span>
+        <span><span class="swatch-gradient" data-swatch="ramp"
+                    data-colors="#fcbba1 #a50f15"></span>speaking (words, &radic; scale)</span>
       </span>
     </div>
     <svg id="chorus-beat-chart"></svg>
@@ -813,7 +834,7 @@ text {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
       <span class="hint">click any row to open the per-play dashboard
         &middot; <code>seg</code> = segments on the active model's spine
         (under sd the mutes-out models fold boundaries they cannot see, so
-        it drops when you switch model; fixed for div2 / div3)</span>
+        it drops when you switch model; fixed for large-seq / middle-seq)</span>
     </h3>
     <div class="scroll"><table id="plays-table"></table></div>
   </div>
@@ -826,19 +847,18 @@ text {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 <script>
 const DATA = {data_json};
 
-// Dashboard-internal key for state Sets / Maps.  Uses the play's
-// English title (<title xml:lang="en">) as the unique key, since
-// p.id (play_id, derived from the TEI header) is not guaranteed unique
-// when the corpus contains rigged variants of the same play.  The
-// methodological contract is that each play in the corpus carries a
-// distinct <title xml:lang="en">; with that contract held, every chip
-// and every dot keys cleanly off the title.  Fallback to p.id then
-// p.title_grc when title_en is absent.
+// Dashboard-internal key for state Sets / Maps.  The drill-down href is
+// the one field guaranteed distinct: the writer allocates each play a
+// directory no other play holds, so two plays that share an English title
+// -- one title used by two authors, say -- still get a chip, a dot and a
+// colour of their own.  Keying off the title merged them into one.  Falls
+// back to the titles and to p.id where no dashboard was written
+// (--no-dashboard).
 function _playKey(p) {{
-  return p.title_en || p.title_grc || p.id;
+  return p.dashboard_href || p.title_en || p.title_grc || p.id;
 }}
 
-const MODE_ORDER = ["sd", "div2", "div3"];
+const MODE_ORDER = ["sd", "large-seq", "middle-seq"];
 
 // A mode is "available" if at least one play has it.
 const AVAILABLE_MODES = MODE_ORDER.filter(m =>
@@ -847,75 +867,163 @@ const AVAILABLE_MODES = MODE_ORDER.filter(m =>
 // Labels and details for the three mute modes -- single source of truth
 // for the active-filters chip strip, hint text, and the radio fieldset.
 const MUTE_MODE_LABELS = {{
-  stage:    {{ label: "stage co-presence",
-               detail: "all on-stage characters as nodes" }},
-  dialogic: {{ label: "dialogic cast on play level",
-               detail: "drop play-level mutes" }},
-  cospeech: {{ label: "dialogic cast on segment level",
-               detail: "only segment-active speakers" }},
+  "full":       {{ label: "stage co-presence",
+                   detail: "all on-stage characters as nodes" }},
+  "p-speaking": {{ label: "speaking cast on play level",
+                   detail: "drop play-level mutes" }},
+  "s-speaking": {{ label: "speaking cast on segment level",
+                   detail: "only segment-active speakers" }},
 }};
+
+// Provenance for the figure exporter: the caption stamped into every exported
+// SVG/PNG, and the slug that names the file.  A corpus chart depends on the
+// segmentation, the network model, the aggregation state and -- unlike the
+// per-play dashboard -- on which plays are currently selected, since the
+// medians are defined relative to that subset.  An image
+// carries none of it.  See figure_export.py.
+const SEG_LABELS_LONG = {{
+  "sd": "stage-direction segmentation",
+  "large-seq": "large-sequence segmentation",
+  "middle-seq": "middle-sequence segmentation",
+}};
+function figureProvenance(panel) {{
+  const ml = MUTE_MODE_LABELS[STATE.muteMode] || MUTE_MODE_LABELS.full;
+  const total = (DATA.plays || []).length;
+  const shown = STATE.selectedPlays ? STATE.selectedPlays.size : total;
+  const bits = [shown === total ? total + " plays"
+                                : shown + " of " + total + " plays",
+                SEG_LABELS_LONG[STATE.seg] || STATE.seg,
+                ml.label,
+                STATE.aggregateChorus ? "collectives aggregated"
+                                      : "collectives not aggregated"];
+  // The beat multiples can be spaced two ways, and the shapes differ enough
+  // that a figure has to say which.
+  if (panel && panel.querySelector("#beat-multiples")) {{
+    bits.push(STATE.beatXMode === "word" ? "x-axis: word position"
+                                         : "x-axis: transition index");
+  }}
+  // Coloured by average degree, the dots' fill is data; a figure must say so.
+  if (panel && panel.querySelector("#sizing-chart") && STATE.toneByDegree) {{
+    bits.push("dots coloured by average degree");
+  }}
+  // A ring on a scatter means the reader highlighted that play; the figure
+  // names which, so the ring needs no legend.
+  if (panel && panel.querySelector("svg.scatter")) {{
+    const marked = activePlays().filter(isHighlighted).map(shortTitle);
+    if (marked.length) bits.push("highlighted: " + marked.join(", "));
+  }}
+  return {{
+    caption: bits.join(" \\u00b7 "),
+    slug: ["corpus", STATE.seg, STATE.muteMode,
+           STATE.aggregateChorus ? "agg" : "",
+           shown === total ? "" : shown + "-plays"].filter(Boolean).join("-"),
+  }};
+}}
+
+// Every play x segmentation x network model x aggregation state in the
+// corpus, as one table.  This is the comparison the dashboard can only show
+// one cell of at a time; the payload already carries all of it.  Consumed by
+// figure_export.py.  Independent of the play selector on purpose: the file
+// is the whole corpus as computed, and a subset is a question for the
+// spreadsheet, not for the export.
+function figureComparisonRows() {{
+  // `id` first: the one column that tells two plays of one title apart, and
+  // the key that joins a row to that play's metrics.json.
+  const header = ["id", "play", "author", "segmentation", "model", "aggregated",
+    "order", "edges", "density", "avg_degree", "max_degree", "diameter",
+    "avg_path_length", "avg_clustering", "components", "segments",
+    "drama_change_rate", "all_in_index", "final_segment_cast_share",
+    "max_simultaneous_speakers", "gini_words", "effective_speakers",
+    "top_speaker", "top_speaker_word_share", "top_speaker_temporal_gini"];
+  const round = v => (typeof v === "number" && !Number.isInteger(v))
+    ? +v.toFixed(6) : v;
+  const rows = [];
+  (DATA.plays || []).forEach(function (p) {{
+    Object.keys(p.segmentations || {{}}).forEach(function (spine) {{
+      const blk = p.segmentations[spine] || {{}};
+      // Empty means "not aggregated" in both dashboards' exports, so the
+      // column filters the same way in either file; the per-play export can
+      // name the groups it collapsed, which the corpus payload does not
+      // carry, so "all" stands for its global toggle.
+      const entries = [["full", "", blk]];
+      if (blk.agg) entries.push(["full", "all", blk.agg]);
+      ["p-speaking", "s-speaking"].forEach(function (model) {{
+        const b = blk[model];
+        if (!b) return;
+        entries.push([model, "", b]);
+        if (b.agg) entries.push([model, "all", b.agg]);
+      }});
+      entries.forEach(function (e) {{
+        const model = e[0], agg = e[1], b = e[2];
+        const si = b.segment_indices || {{}};
+        const sd = b.speech_distribution || {{}};
+        rows.push([p.id || "", p.title_en || p.id, p.author || "", spine, model, agg,
+          b.size, b.numEdges, round(b.density), round(b.averageDegree),
+          b.maxDegree, b.diameter, round(b.averagePathLength),
+          round(b.averageClustering), b.numConnectedComponents,
+          b.num_segments, round(mean(b.change_rates || [])),
+          round(si.all_in_index), round(si.final_segment_cast_share),
+          si.max_simultaneous_speakers, round(sd.gini_words),
+          round(sd.effective_speakers),
+          (sd.top_speaker_ids || []).join(", "),
+          round(sd.top_speaker_word_share),
+          round(sd.top_speaker_temporal_gini)].map(v => v == null ? "" : v));
+      }});
+    }});
+  }});
+  return {{ name: (DATA.name || document.title || "corpus") + "-all-configurations",
+           header: header, rows: rows }};
+}}
 
 const STATE = {{
   seg: AVAILABLE_MODES[0] || "sd",
   // Three-state network model.  See dashboard.py for the orthogonal
-  // (include_mutes, edge_rule) axes underneath: stage = (T, presence);
-  // dialogic = (F, presence); cospeech = (F, co_speech).  The radio
+  // (include_mutes, segment_cast) axes underneath: stage = (T, presence);
+  // p-speaking = (F, stage); s-speaking = (F, speaking).  The radio
   // group in the seg-tabs row drives this.
-  muteMode: "stage",
+  muteMode: "full",
+  // Beat-chart small-multiples x-axis mode.
+  //   "segment" -> evenly spaced transition index (default)
+  //   "word"   -> each transition placed at its cumulative word position
+  //                (stage-time), so doorway flurries collapse and turnover
+  //                between long scenes stands alone.  Per play.
+  beatXMode: "segment",
   // Global partOf aggregation: True = collapse chorus halves (e.g.
-  // Lysistrata's chorosAndron + chorosGynaikon -> choros) into a single
+  // Lysistrata's chorosGeronton + chorosGynaikon -> choros) into a single
   // node everywhere; False = treat each half separately.  Routed through
-  // segOf(p), so it cascades through every scatter, the iso-curve and
+  // segOf(p), so it cascades through every scatter, the
   // pair-lines, the composition bars, the KPI ranges, the plays table and
   // the beat multiples -- not just the chorus heat-map.  Plays without
   // aggregable partOf groups are unaffected (segOf keeps their raw block).
   aggregateChorus: false,
   // Only consumed by the density x order chart: when True, draw thin
-  // grey lines connecting every pair of plays with similar order
+  // red lines connecting every pair of plays with similar order
   // (Delta n <= 5).  Methodologically these visualise the
   // local-neighbourhood density variation -- the corpus's natural
-  // "noise floor" against which iso-curve deviations can be calibrated.
+  // "noise floor" of density variation among plays of similar order.
   // Plays without nearby-order neighbours (e.g. Knights at n=8) have
   // no incident lines.  Lysistrata's lines are visibly taller than any
   // other pair's, which is the visual signature of the methodological
-  // argument.
-  showPairLines: true,
+  // argument.  Off by default, like the tone below: the chart opens as
+  // the plain density x order plot.
+  showPairLines: false,
+  // Density x order: fill the dots by average degree.
+  toneByDegree: false,
   // Set of play ids currently included.  Initialised to the full
   // corpus on load.  Every consumer of activePlays() filters through
   // this -- so unticking a chip in the selector cascades through KPIs,
-  // every scatter chart's iso-curve and median crosshair, the beat
+  // every scatter chart's median crosshair, the beat
   // multiples, the chorus chart, and the plays table at once.  This is
   // by design: the "corpus median" is defined relative to whatever
-  // subset is held in mind.
+  // subset is held in mind, and it is always the subset on screen.
   selectedPlays: new Set(DATA.plays.map(p => _playKey(p))),
-  // Anchor set: the plays that contribute to corpus aggregates (median,
-  // iso-curve k_median, KPI ranges).  Always a subset of selectedPlays.
-  // A play in selectedPlays but NOT in anchorPlays is "display-only":
-  // visible on the chart, but excluded from the reference calculation.
-  // The methodological motive: rigged variants (e.g. partOf-aggregated
-  // versions of one play) are not independent observations and should
-  // not pollute the corpus median.  Initialised to the full corpus.
-  anchorPlays: new Set(DATA.plays.map(p => _playKey(p))),
-  // Per-play color override for scatter dots.  Maps play id -> palette
-  // index (0..PLAY_COLOR_PALETTE.length - 1).  Unset plays use index 0
-  // (the default accent colour).  The chip's small colour dot is
-  // clickable and cycles through the palette.
-  playColors: {{}},
+  // Plays marked by the reader, keyed like selectedPlays.  A highlighted
+  // play gets a ring on every scatter and is always labelled, and the
+  // caption of an exported scatter names it.  One mark, not a palette: a
+  // colour code the reader invents has no legend and says nothing in an
+  // exported figure, while "highlighted: Lys." says exactly what it is.
+  highlighted: new Set(),
 }};
-
-// Compact qualitative palette for per-play dot recolouring.  Index 0 is
-// the default (matches the original accent blue).  The remaining
-// entries are chosen for distinguishability under sequential cycling
-// and reasonable contrast against the white plot background.
-const PLAY_COLOR_PALETTE = [
-  "var(--accent)",   // 0 - default blue (matches everything else in the dashboard)
-  "#e07a5f",         // 1 - coral / orange-red  (useful for highlighting one play)
-  "#4daf4a",         // 2 - green
-  "#b73779",         // 3 - magenta
-  "#ff7f00",         // 4 - bright orange
-  "#984ea3",         // 5 - purple
-  "#525252",         // 6 - dark grey (de-emphasis)
-];
 
 function fmt(v, dp=3) {{
   if (v == null) return "";
@@ -940,17 +1048,18 @@ function median(xs) {{
 }}
 function segOf(p) {{
   // Active segmentation block for the currently-selected network model.
-  // Each non-default mode (dialogic, cospeech) lives in a parallel
+  // Each non-default mode (p-speaking, s-speaking) lives in a parallel
   // sub-dict on the segmentation entry, with the same field shape as
   // the top-level (stage-mode) fields, so every consumer below (KPI,
   // scatter, bar chart, table, beat charts) works without case-splits.
   // Missing sub-dicts fall back to the top-level stage view.
   const base = (p.segmentations || {{}})[STATE.seg];
   if (!base) return null;
-  const m = STATE.muteMode || "stage";
+  const m = STATE.muteMode || "full";
   let block = base;
-  if (m === "dialogic" && base.dialogic) block = base.dialogic;
-  else if (m === "cospeech" && base.cospeech) block = base.cospeech;
+  // Bracket access: the model keys contain a hyphen.
+  if (m === "p-speaking" && base["p-speaking"]) block = base["p-speaking"];
+  else if (m === "s-speaking" && base["s-speaking"]) block = base["s-speaking"];
   // Global partOf aggregation: swap in the nested agg counterpart when the
   // "aggregate chorus halves" toggle is on and an aggregated view exists
   // for this play (semi-choruses collapsed to one node).  Plays without
@@ -964,7 +1073,7 @@ function segOf(p) {{
 function renderActiveFilters() {{
   const host = document.getElementById("active-filters");
   if (!host) return;
-  const ml = MUTE_MODE_LABELS[STATE.muteMode] || MUTE_MODE_LABELS.stage;
+  const ml = MUTE_MODE_LABELS[STATE.muteMode] || MUTE_MODE_LABELS.full;
   const modelLabel = ml.label
     + ' <span class="detail">(' + ml.detail + ')</span>';
   let html = '<span class="filter-chip">' + modelLabel + '</span>';
@@ -976,47 +1085,23 @@ function renderActiveFilters() {{
     html += ' <span class="filter-chip">subset '
          + '<span class="detail">' + sel + ' / ' + total + ' plays</span></span>';
   }}
-  // Anchor chip: shown only when anchors != selection (i.e. some plays
-  // are display-only).  Lets screenshots document not just "which plays
-  // we're looking at" but "which plays count as the reference set".
-  const anch = STATE.anchorPlays ? STATE.anchorPlays.size : total;
-  if (anch !== sel) {{
-    html += ' <span class="filter-chip">anchors '
-         + '<span class="detail">' + anch + ' / ' + sel + ' selected</span></span>';
-  }}
   host.innerHTML = html;
   // Topbar may have grown / shrunk because of the chip strip wrap;
   // re-measure so the sticky tabs and selector pin at the right offsets.
   if (typeof updateStickyOffsets === "function") updateStickyOffsets();
 }}
 
+// The plays on screen -- and, the same set, the plays every reference
+// quantity is computed from: the median crosshairs and the KPI ranges.
+// There is deliberately no second set.  One existed, to show a play
+// without letting it set the reference; a median ignores an outlier by
+// itself, so it moved a crosshair by at most a few per cent of an axis.
 function activePlays() {{
   return DATA.plays.filter(p => segOf(p)
     && (!STATE.selectedPlays || STATE.selectedPlays.has(_playKey(p))));
 }}
-// Plays that contribute to the corpus reference computations.  This is
-// the intersection of selectedPlays and anchorPlays (the latter never
-// extends beyond the former in normal operation, but the intersection
-// is defensive in case of state drift).  Reference quantities -- the
-// iso-degree curve's k_median, the median crosshair on every scatter,
-// the KPI ranges in the corpus summary panel -- should all be computed
-// against this set, not against activePlays().
-function anchorPlays() {{
-  return DATA.plays.filter(p => {{
-    const k = _playKey(p);
-    return segOf(p)
-        && STATE.selectedPlays && STATE.selectedPlays.has(k)
-        && STATE.anchorPlays    && STATE.anchorPlays.has(k);
-  }});
-}}
-// Resolve the colour for a play's scatter dot.  Defaults to palette[0]
-// (the accent blue) when the play has no explicit override.
-function playColor(p) {{
-  const idx = STATE.playColors[_playKey(p)];
-  if (idx == null || idx < 0 || idx >= PLAY_COLOR_PALETTE.length) {{
-    return PLAY_COLOR_PALETTE[0];
-  }}
-  return PLAY_COLOR_PALETTE[idx];
+function isHighlighted(p) {{
+  return STATE.highlighted.has(_playKey(p));
 }}
 
 // -------------------------------------------------------------------- plays selector
@@ -1031,98 +1116,65 @@ function renderPlaysSelector() {{
   // strip is a flat selector, not the chorus-chart's sorted view.
   const plays = DATA.plays.slice();
   host.selectAll("*").remove();
-  // Tri-state per chip:
-  //   "off"          = not selected, not visible, not in reference
-  //   "anchor"       = selected, visible, AND counts in corpus median
-  //   "display-only" = selected, visible, but NOT in median
-  // Click on the chip body cycles off -> anchor -> display-only -> off.
-  // Click on the colour dot (left inside the chip) cycles the play's
-  // dot colour through PLAY_COLOR_PALETTE without changing state.
-  function chipStateOf(key) {{
-    if (!STATE.selectedPlays.has(key)) return "off";
-    return STATE.anchorPlays.has(key) ? "anchor" : "display-only";
+  // Click on the chip body includes or excludes the play.  Click on the
+  // highlight dot (left inside the chip) toggles the highlight without
+  // changing whether the play is included.
+  function togglePlay(key) {{
+    if (STATE.selectedPlays.has(key)) STATE.selectedPlays.delete(key);
+    else STATE.selectedPlays.add(key);
   }}
-  function cycleChipState(key) {{
-    const s = chipStateOf(key);
-    if (s === "off") {{
-      STATE.selectedPlays.add(key);
-      STATE.anchorPlays.add(key);
-    }} else if (s === "anchor") {{
-      // demote: keep selected but drop from anchor set
-      STATE.anchorPlays.delete(key);
-    }} else {{ // display-only
-      STATE.selectedPlays.delete(key);
-      STATE.anchorPlays.delete(key);
-    }}
-  }}
-  function cyclePlayColor(key) {{
-    const cur = STATE.playColors[key] || 0;
-    STATE.playColors[key] = (cur + 1) % PLAY_COLOR_PALETTE.length;
+  function toggleHighlight(key) {{
+    if (STATE.highlighted.has(key)) STATE.highlighted.delete(key);
+    else STATE.highlighted.add(key);
   }}
 
   const chips = host.selectAll(".chip-toggle").data(plays, p => _playKey(p))
     .enter().append("span")
-    .attr("class", p => {{
-      const s = chipStateOf(_playKey(p));
-      // .on for the anchor state; .off for off; .display-only adds the
-      // "selected but not in reference" italic / lighter styling.
-      if (s === "off") return "chip-toggle off";
-      if (s === "anchor") return "chip-toggle on";
-      return "chip-toggle on display-only";
-    }})
+    .attr("class", p => STATE.selectedPlays.has(_playKey(p))
+                          ? "chip-toggle on" : "chip-toggle off")
     .attr("title", p => {{
-      const s = chipStateOf(_playKey(p));
-      const stateLabel = (s === "anchor" ? "in reference"
-                        : s === "display-only" ? "display only (not in reference)"
-                        : "excluded");
+      const state = STATE.selectedPlays.has(_playKey(p)) ? "included" : "excluded";
       return (p.author || "") + (p.author ? " - " : "")
-           + (p.title_en || p.id) + " - " + stateLabel
-           + "\\n(click body: cycle state; click dot: cycle colour)";
+           + (p.title_en || p.id) + " - " + state
+           + (isHighlighted(p) ? ", highlighted" : "")
+           + "\\n(click body: include / exclude; click dot: highlight)";
     }})
     .on("click", (event, p) => {{
-      // Ignore clicks on the colour dot -- that handler runs separately
+      // Ignore clicks on the highlight dot -- that handler runs separately
       // and stops propagation.  Without this guard d3's binding would
-      // also fire the chip body handler on a colour-dot click.
-      if (event.target.classList.contains("color-dot")) return;
-      cycleChipState(_playKey(p));
+      // also fire the chip body handler on a dot click.
+      if (event.target.classList.contains("hl-dot")) return;
+      togglePlay(_playKey(p));
       renderActiveFilters();
       render();
     }});
 
-  // State / anchor mark (Unicode check / cross).  Display-only chips
-  // drop the anchor glyph via CSS rule on .display-only .anchor-mark.
+  // State mark (Unicode check / cross).
   chips.append("span").attr("class", "mark")
     .text(p => STATE.selectedPlays.has(_playKey(p)) ? "\\u2713" : "\\u2715");
-  chips.append("span").attr("class", "anchor-mark")
-    .text(p => STATE.anchorPlays.has(_playKey(p)) ? "\\u2693" : "");
 
-  // Colour dot: small clickable circle.  Click cycles the palette index
-  // for this play's dot colour in every scatter chart.  Propagation
-  // stopped so it does not also cycle the chip state.
-  chips.append("span").attr("class", "color-dot")
-    .style("background", p => playColor(p))
+  // Highlight dot: small clickable ring, filled when the play is
+  // highlighted.  Propagation stopped so it does not also toggle the
+  // play's inclusion.
+  chips.append("span")
+    .attr("class", p => "hl-dot" + (isHighlighted(p) ? " on" : ""))
     .on("click", (event, p) => {{
       event.stopPropagation();
-      cyclePlayColor(_playKey(p));
+      toggleHighlight(_playKey(p));
       render();
     }});
 
   chips.append("span").attr("class", "chip-label").text(p => shortTitle(p));
 
-  // Counter: "anchors / selected / total" when those differ, else just "N / total"
-  const sel = STATE.selectedPlays.size;
-  const anch = STATE.anchorPlays.size;
-  const tot = plays.length;
-  let countText;
-  if (anch === sel) countText = sel + " / " + tot;
-  else              countText = anch + " anchor + " + (sel - anch) + " display-only / " + tot;
-  document.getElementById("plays-count").textContent = countText;
+  // Counter: "N / total".
+  document.getElementById("plays-count").textContent =
+    STATE.selectedPlays.size + " / " + plays.length;
 }}
 
 // -------------------------------------------------------------------- tabs
 function renderTabs() {{
   const tabs = d3.select("#seg-tabs");
-  const labels = {{ sd: "Stage directions", div2: "div2", div3: "div3" }};
+  const labels = {{ sd: "Stage directions", "large-seq": "large-seq", "middle-seq": "middle-seq" }};
   tabs.selectAll("button.tab")
     .data(AVAILABLE_MODES, d => d)
     .join(
@@ -1143,15 +1195,17 @@ function renderKPIs() {{
   const get = (acc) => ps.map(p => acc(segOf(p))).filter(v => v != null && !Number.isNaN(v));
   const dens   = get(s => s.density);
   const aDeg   = get(s => s.averageDegree);
-  const dcr    = get(s => s.segment_indices && s.segment_indices.all_in_index);  // placeholder
-  // True drama-change rate from change_rates:
-  const dcrs   = ps.map(p => mean(segOf(p).change_rates || [])).filter(x => x > 0);
-  const finals = get(s => s.segment_indices && s.segment_indices.final_scene_size);
+  // True drama-change rate from change_rates.  A play with no transitions
+  // has no rate and is left out; one whose casts never change has a rate of
+  // 0, which is a value and stays in the range, as it does in the table.
+  const dcrs   = ps.map(p => segOf(p).change_rates || [])
+                   .filter(r => r.length).map(mean);
+  const finals = get(s => s.segment_indices && s.segment_indices.final_segment_cast_share);
   const sizes  = get(s => s.size);
   const speakers = get(s => (s.demographics && s.demographics.speakers) || 0);
   const mutes    = get(s => (s.demographics && s.demographics.mutes) || 0);
-  const topShare = get(s => (s.speech_distribution && s.speech_distribution.top_speaker_verse_share) || 0);
-  const gini     = get(s => (s.speech_distribution && s.speech_distribution.gini_verses) || 0);
+  const topShare = get(s => (s.speech_distribution && s.speech_distribution.top_speaker_word_share) || 0);
+  const gini     = get(s => (s.speech_distribution && s.speech_distribution.gini_words) || 0);
 
   function range(xs) {{
     if (!xs.length) return "\\u2014";
@@ -1163,7 +1217,7 @@ function renderKPIs() {{
       {{ k: "plays",                v: ps.length }},
       {{ k: "total characters",     v: d3.sum(sizes) }},
       {{ k: "total segments",       v: d3.sum(get(s => s.num_segments)) }},
-      {{ k: "total verses spoken",  v: d3.sum(get(s => (s.speech_distribution || {{}}).total_verses_spoken || 0)) }},
+      {{ k: "total words spoken",  v: d3.sum(get(s => (s.speech_distribution || {{}}).total_words_spoken || 0)) }},
     ]}},
     {{ title: "Network", items: [
       {{ k: "order (range)",       v: range(sizes) }},
@@ -1173,14 +1227,18 @@ function renderKPIs() {{
     {{ title: "Composition", items: [
       {{ k: "speakers (range)",    v: range(speakers) }},
       {{ k: "mutes (range)",       v: range(mutes) }},
+      // No mutes, no ratio: both speaking models drop the mutes from every
+      // count (Methods \\u00a73), and dividing by max(1, 0) printed the
+      // corpus speaker total as if it were one.
       {{ k: "speaker / mute ratio",
-        v: fmt(d3.sum(speakers) / Math.max(1, d3.sum(mutes)), 2) }},
+        v: d3.sum(mutes) > 0 ? fmt(d3.sum(speakers) / d3.sum(mutes), 2)
+                             : "\\u2014" }},
     ]}},
     {{ title: "Plot dynamics", items: [
       {{ k: "drama-change rate",   v: range(dcrs), beat: true }},
-      {{ k: "final-scene size",    v: range(finals), beat: true }},
+      {{ k: "final seg. cast share", v: range(finals), beat: true }},
       {{ k: "top-speaker share",   v: range(topShare) }},
-      {{ k: "Gini (verses)",       v: range(gini) }},
+      {{ k: "Gini (words)",       v: range(gini) }},
     ]}},
   ];
 
@@ -1197,34 +1255,92 @@ function renderKPIs() {{
   dds.append("span").attr("class", "primary").text(d => d.v);
 }}
 
+// A pair-line as SVG path data: straight wherever a reader can follow it,
+// bowed where a straight segment would be lost.  There are two ways to lose
+// one.  It can run under a third play's marker: plays of equal order stack
+// on one vertical, so the line from A to C passes through B, lies on top of
+// the line from A to B, and its only distinguishing stretch disappears under
+// the dots -- A-C reads as A-B.  Or it can be so short that its own two
+// markers cover it.  In either case the line bows far enough to clear what
+// hid it, and always to the left, away from the labels, which sit to the
+// right of the dots.  P, Q and `others` are screen positions [x, y].
+function pairLinePath(P, Q, others, dotR) {{
+  const dx = Q[0] - P[0], dy = Q[1] - P[1];
+  const len = Math.hypot(dx, dy);
+  const straight = "M" + P[0] + "," + P[1] + "L" + Q[0] + "," + Q[1];
+  if (len === 0) return straight;
+  // Margin beyond the marker's edge.  Sized at the obstruction's projection,
+  // the curve's true nearest approach falls a little short of it, so the
+  // margin is generous enough to survive that and still read as a gap.
+  const clear = dotR + 7;
+  // A quadratic curve whose control point sits b off the chord's midpoint
+  // stands 2t(1-t)b off the chord at parameter t; size b so that it clears
+  // the worst obstruction where that obstruction actually is.
+  let need = 0;
+  for (const O of others) {{
+    const t = ((O[0] - P[0]) * dx + (O[1] - P[1]) * dy) / (len * len);
+    if (t <= 0 || t >= 1) continue;
+    const dist = Math.abs((O[0] - P[0]) * dy - (O[1] - P[1]) * dx) / len;
+    if (dist >= clear) continue;
+    const tc = Math.min(0.85, Math.max(0.15, t));
+    need = Math.max(need, (clear + dist) / (2 * tc * (1 - tc)));
+  }}
+  if (len - 2 * dotR < Math.max(8, dotR)) need = Math.max(need, 2 * clear);
+  if (need === 0) return straight;
+  let nx = -dy / len, ny = dx / len;
+  if (nx > 0 || (nx === 0 && ny > 0)) {{ nx = -nx; ny = -ny; }}
+  const b = Math.min(need, 6 * dotR);
+  const cx = (P[0] + Q[0]) / 2 + nx * b, cy = (P[1] + Q[1]) / 2 + ny * b;
+  return "M" + P[0] + "," + P[1] + "Q" + cx + "," + cy + " " + Q[0] + "," + Q[1];
+}}
+
+// One tone scale for every view of density x order coloured by average
+// degree.  Anchored to the corpus's typical average degree over all spines,
+// models and aggregation states -- not the active view's -- so a tone means
+// the same number whichever view is showing, and a play that stands out in
+// one view and not in another visibly does so.  Rounded to a power of two,
+// so the legend reads 4 / 8 / 16 rather than 3.0 / 6.1 / 12.2.
+const DEGREE_ANCHOR = (function() {{
+  const ks = [];
+  const take = b => {{
+    if (b && typeof b.averageDegree === "number" && b.averageDegree > 0)
+      ks.push(b.averageDegree);
+  }};
+  for (const p of DATA.plays || []) {{
+    for (const s of Object.values(p.segmentations || {{}})) {{
+      for (const b of [s, s && s["p-speaking"], s && s["s-speaking"]]) {{
+        take(b);
+        take(b && b.agg);
+      }}
+    }}
+  }}
+  if (!ks.length) return 8;
+  return Math.pow(2, Math.round(Math.log2(median(ks))));
+}})();
+
 // -------------------------------------------------------------------- scatter helpers
 //   `extras` (optional) is called as extras(svg, x, y, ps, geom) after the
 //   axes and median crosshair are drawn but before the dots, so background
-//   reference shapes (e.g. the iso-degree curve) sit behind the data.
-//   `showMedian` (default true) controls whether the median crosshair is
-//   drawn; pass false when an `extras` shape already supplies a better
-//   reference (e.g. the iso-degree curve on density-vs-size).
-//   `outOfDomain` (optional) is a predicate (d) => boolean.  When true,
-//   that point lies outside the iso-curve / reference domain and is drawn
-//   as a hollow ring with a tooltip note, signalling the comparison
-//   doesn't apply there.
-function drawScatter(selector, accX, accY, labelX, labelY,
-                     extras, showMedian, outOfDomain) {{
-  if (showMedian == null) showMedian = true;
-  const flagged = (typeof outOfDomain === "function") ? outOfDomain : null;
+//   shapes (the pair-lines on density x order) sit behind the data.
+//   Highlighted plays get a ring and are always labelled, in every mode.
+//   `opts.tone` (optional) fills each dot by a third quantity instead of the
+//   one accent colour:  {{value: s => number, domain: [lo, hi], legend:
+//   [values marked on the legend's bar], caption: text, title: tooltip
+//   name}}.  Dots keep one size either way.
+function drawScatter(selector, accX, accY, labelX, labelY, extras, opts) {{
+  const tone = (opts || {{}}).tone || null;
   const svg = d3.select(selector);
   const w = svg.node().clientWidth, h = svg.node().clientHeight;
   svg.selectAll("*").remove();
-  svg.attr("viewBox", `0 0 ${{w}} ${{h}}`);
+  // Marked, so a figure's caption knows the panel is a scatter and names
+  // any highlighted play.
+  svg.attr("viewBox", `0 0 ${{w}} ${{h}}`).classed("scatter", true);
   const M = {{top: 16, right: 18, bottom: 36, left: 50}};
-  // All visible plays: activePlays() = selectedPlays (display set).
-  // Reference computations (median crosshair, iso-curve k_median): use
-  // the anchor subset, which excludes "display-only" plays.
+  // The plays on screen, which are also the plays the median crosshair is
+  // computed from: activePlays() = selectedPlays.
   const ps = activePlays().map(p => ({{p, x: accX(segOf(p)), y: accY(segOf(p))}}))
                           .filter(d => d.x != null && d.y != null && !Number.isNaN(d.x) && !Number.isNaN(d.y));
   if (!ps.length) return;
-  const anchorKeys = STATE.anchorPlays || new Set();
-  const refPs = ps.filter(d => anchorKeys.has(_playKey(d.p)));
 
   // Size-responsive constants: when the SVG is large (typically in
   // fullscreen mode the width exceeds ~900px), scale the dot radius,
@@ -1237,6 +1353,24 @@ function drawScatter(selector, accX, accY, labelX, labelY,
   const tickFont      = isBig ? 12 : 10;
   const playLabelFont = isBig ? 14 : 10;
   const axisTickCount = isBig ? 8 : 6;
+
+  // Tone, when asked for, carries a quantity in the dots' fill, light to
+  // dark, over a fixed domain -- never the active view's own range, which
+  // would stretch whatever spread a view has, however small, across the
+  // whole ramp.  The colours are viridis, reversed so that darker means
+  // more.  Of the scales measured it changes at the most even perceptual
+  // rate (CIEDE2000 8.1-12.4 per tenth of the domain), so equal differences
+  // look alike wherever they fall, and over the same domain it shows about
+  // twice the difference a single blue did: 20.6 against 9.5 between the
+  // lowest and highest of the ten comedies below Lysistrata on the default
+  // view.  Its yellowest tenth is left out, as too pale against the page.
+  const toneFor = tone
+    ? (v => {{
+        const [lo, hi] = tone.domain;
+        const t = Math.min(1, Math.max(0, (v - lo) / (hi - lo)));
+        return d3.interpolateViridis(0.9 * (1 - t));
+      }})
+    : null;
 
   const xExt = d3.extent(ps, d => d.x);
   const yExt = d3.extent(ps, d => d.y);
@@ -1258,16 +1392,14 @@ function drawScatter(selector, accX, accY, labelX, labelY,
      .attr("text-anchor", "middle").attr("fill", "var(--muted)")
      .attr("font-size", axisLabelFont).text(labelY);
 
-  // Median reference crosshair: descriptive anchor, not a regression.  Drawn
+  // Median reference crosshair: descriptive, not a regression.  Drawn
   // before the dots so the points sit on top.  Lines only -- no labels,
   // so the chart stays uncluttered (medians are also reported in the KPI
-  // panel and the plays table).  Computed over the ANCHOR set, so
-  // display-only plays do not perturb the reference.  If anchor set is
-  // empty, fall back to all displayed plays (graceful degradation).
-  if (showMedian) {{
-    const refForMed = refPs.length ? refPs : ps;
-    const medX = median(refForMed.map(d => d.x));
-    const medY = median(refForMed.map(d => d.y));
+  // panel and the plays table).  Computed over the plays on screen, so the
+  // reference is always exactly what the reader sees.
+  {{
+    const medX = median(ps.map(d => d.x));
+    const medY = median(ps.map(d => d.y));
     const refG = svg.append("g").attr("class", "median-ref");
     refG.append("line")
       .attr("x1", x(medX)).attr("x2", x(medX))
@@ -1279,8 +1411,6 @@ function drawScatter(selector, accX, accY, labelX, labelY,
       .attr("stroke", "#c8c8c8").attr("stroke-dasharray", "3,3").attr("stroke-width", 1);
   }}
 
-  if (typeof extras === "function") extras(svg, x, y, ps, {{w: w, h: h, M: M, refPs: refPs}});
-
   // Coincident-dot disambiguation.  Plays with identical (x, y) (e.g.,
   // Wealth and Thesmophoriazusae at order=13 / avg-deg=4.62 on
   // average-degree x order) would render as a single overlapping dot,
@@ -1288,14 +1418,15 @@ function drawScatter(selector, accX, accY, labelX, labelY,
   // rounded screen position; for each group of 2+, distribute the dots
   // radially around the original centre so each gets its own
   // clickable / hoverable area.  Each dot stores its offset in _dx/_dy
-  // (read below when positioning circle and label).
+  // (read below when positioning circle and label).  Computed before
+  // `extras`, so that anything drawn behind the dots -- the pair-lines --
+  // ends on the dot the reader sees rather than on the undisplaced centre.
   const _coinGroups = new Map();
   for (const d of ps) {{
     const k = Math.round(x(d.x)) + "," + Math.round(y(d.y));
     if (!_coinGroups.has(k)) _coinGroups.set(k, []);
     _coinGroups.get(k).push(d);
   }}
-  const _coinOffsetR = dotR * 1.4;
   for (const grp of _coinGroups.values()) {{
     if (grp.length <= 1) {{
       if (grp.length === 1) {{ grp[0]._dx = 0; grp[0]._dy = 0; }}
@@ -1304,6 +1435,7 @@ function drawScatter(selector, accX, accY, labelX, labelY,
     // Distribute around a circle, starting from due north for stable
     // ordering.  Two coincident dots produce a vertical pair; three a
     // triangle; etc.  Visual radius _coinOffsetR scales with dot size.
+    const _coinOffsetR = dotR * 1.4;
     for (let i = 0; i < grp.length; i++) {{
       const a = (2 * Math.PI * i) / grp.length - Math.PI / 2;
       grp[i]._dx = _coinOffsetR * Math.cos(a);
@@ -1311,51 +1443,251 @@ function drawScatter(selector, accX, accY, labelX, labelY,
     }}
   }}
 
-  // Dot rendering.  Each play gets:
-  //   - fill colour = palette[STATE.playColors[id] || 0] (the chip's dot)
-  //   - opacity 1.0 if anchor, 0.55 if display-only (visible but
-  //     visibly distinct from the reference set)
-  //   - hollow ring when flagged out-of-domain (preserves the existing
-  //     iso-curve flagging convention)
+  if (typeof extras === "function") {{
+    extras(svg, x, y, ps, {{w: w, h: h, M: M, dotR: dotR}});
+  }}
+
+  // Dot rendering.  One accent colour, unless the chart gives the fill to a
+  // quantity; the fill is never the reader's to set, so colour on a scatter
+  // either means nothing or means what the legend says.
   const dots = svg.append("g").selectAll("circle").data(ps).enter().append("circle")
-    .attr("class", d => "dot" + (anchorKeys.has(_playKey(d.p)) ? "" : " display-only"))
+    .attr("class", "dot")
     .attr("cx", d => x(d.x) + (d._dx || 0))
     .attr("cy", d => y(d.y) + (d._dy || 0))
     .attr("r", dotR)
-    .attr("fill",   d => (flagged && flagged(d)) ? "white"      : playColor(d.p))
-    .attr("stroke", d => (flagged && flagged(d)) ? playColor(d.p) : "white")
-    .attr("stroke-width", d => (flagged && flagged(d)) ? (isBig ? 2.4 : 1.6) : (isBig ? 1.8 : 1.2))
-    .attr("opacity", d => anchorKeys.has(_playKey(d.p)) ? 1.0 : 0.55)
+    .attr("fill",   d => toneFor ? toneFor(tone.value(segOf(d.p))) : "var(--accent)")
+    .attr("stroke", "white")
+    .attr("stroke-width", isBig ? 1.8 : 1.2)
     .on("click", (_, d) => {{ if (d.p.dashboard_href) window.location.href = d.p.dashboard_href; }});
+
+  // Highlight: a ring around the dot, so it reads the same whether the fill
+  // is the accent or a tone that carries data.  Drawn over the dots, and not
+  // hit-testable, so the dot beneath keeps its tooltip and its click.
+  const hl = ps.filter(d => isHighlighted(d.p));
+  svg.append("g").attr("class", "highlight-rings").attr("pointer-events", "none")
+    .selectAll("circle").data(hl).enter().append("circle")
+    .attr("cx", d => x(d.x) + (d._dx || 0))
+    .attr("cy", d => y(d.y) + (d._dy || 0))
+    .attr("r", dotR + (isBig ? 5 : 3.5))
+    .attr("fill", "none")
+    .attr("stroke", "var(--highlight)")
+    .attr("stroke-width", isBig ? 3 : 2);
   dots.append("title").text(d => {{
-    let t = (d.p.title_en || d.p.id) + "\\n" +
-            labelX + " = " + fmt(d.x) + "\\n" +
-            labelY + " = " + fmt(d.y);
-    if (flagged && flagged(d)) t += "\\n(outside iso-curve domain: n \\u2264 k + 1)";
-    return t;
+    return playName(d.p) + "\\n" +
+           labelX + " = " + fmt(d.x) + "\\n" +
+           labelY + " = " + fmt(d.y) +
+           (tone ? "\\n" + tone.title + " = " + fmt(tone.value(segOf(d.p))) : "");
   }});
 
-  // Labels above points (compact, only if not too crowded).
-  // Inherit the coincidence offset so labels track their displaced dots.
-  if (ps.length <= 20) {{
-    svg.append("g").selectAll("text.lab").data(ps).enter().append("text")
-      .attr("class", "lab")
-      .attr("x", d => x(d.x) + (d._dx || 0) + (isBig ? 12 : 7))
-      .attr("y", d => y(d.y) + (d._dy || 0) + (isBig ? 5 : 3))
-      .attr("font-size", playLabelFont).attr("fill", "#555")
-      .text(d => shortTitle(d.p));
+  // Tone legend, top right: a bar over the whole tone range, continuous as
+  // the tone is -- separate swatches would read as classes -- and marked at
+  // the values in `tone.legend`.  That corner is empty on density x order by
+  // construction: density falls as the cast grows, so no large cast sits
+  // near the top.  Its box is kept, so no label is moved onto it.
+  let legendBox = null;
+  if (tone) {{
+    const font = isBig ? 12 : 9;
+    const barW = isBig ? 160 : 90, barH = isBig ? 10 : 7;
+    const right = w - M.right - 6, left = right - barW;
+    const top = M.top + font + 5;
+    const [lo, hi] = tone.domain;
+    const xOf = v => left + (v - lo) / (hi - lo) * barW;
+    const gid = svg.attr("id") + "-tone";
+    const grad = svg.append("defs").append("linearGradient").attr("id", gid);
+    for (let i = 0; i <= 10; i++) {{
+      grad.append("stop").attr("offset", i / 10)
+        .attr("stop-color", toneFor(lo + (hi - lo) * i / 10));
+    }}
+    const lg = svg.append("g").attr("class", "tone-legend");
+    lg.append("text").attr("x", right).attr("y", M.top + font)
+      .attr("text-anchor", "end").attr("font-size", font)
+      .attr("fill", "var(--muted)").text(tone.caption);
+    lg.append("rect").attr("x", left).attr("y", top)
+      .attr("width", barW).attr("height", barH)
+      .attr("fill", `url(#${{gid}})`).attr("stroke", "#bbb").attr("stroke-width", 0.5);
+    // A dot beyond either end takes that end's tone; the end then says so.
+    const vals = ps.map(d => tone.value(segOf(d.p)));
+    const below = vals.some(v => v < lo), above = vals.some(v => v > hi);
+    tone.legend.forEach(v => {{
+      lg.append("line").attr("x1", xOf(v)).attr("x2", xOf(v))
+        .attr("y1", top + barH).attr("y2", top + barH + 3)
+        .attr("stroke", "#999").attr("stroke-width", 1);
+      lg.append("text").attr("x", xOf(v)).attr("y", top + barH + 3 + font)
+        .attr("text-anchor", "middle").attr("font-size", font)
+        .attr("fill", "var(--muted)")
+        .text((v === lo && below ? "\\u2264" : v === hi && above ? "\\u2265" : "") + v);
+    }});
+    legendBox = boxOf(lg.node());
   }}
+
+  // Labels beside points, every play's when the chart is not too crowded.
+  // Above twenty plays only the highlighted ones are labelled -- which is
+  // what the highlight is for in a corpus that large: the one way, short of
+  // hovering, to find a play on every scatter.  A highlighted label is set
+  // bold and clears its ring.  Inherit the coincidence offset so labels
+  // track their displaced dots.  Each label is set right of its dot and
+  // measured there; placeLabels then moves any that would cover another
+  // label, come nearer another play's dot than its own, or run off the plot.
+  const labelled = ps.length <= 20 ? ps : hl;
+  const at = d => [x(d.x) + (d._dx || 0), y(d.y) + (d._dy || 0)];
+  // What a label must clear around its dot: on a highlighted play, the ring
+  // and half its stroke.  `clear` is the gap it leaves.
+  const reach = d => isHighlighted(d.p)
+    ? dotR + (isBig ? 5 : 3.5) + (isBig ? 1.5 : 1) : dotR;
+  const clear = isBig ? 3 : 2;
+  const labs = svg.append("g").selectAll("text.lab").data(labelled).enter().append("text")
+    .attr("class", "lab")
+    .attr("x", d => at(d)[0] + (isBig ? 12 : 7)
+                   + (isHighlighted(d.p) ? (isBig ? 6 : 4) : 0))
+    .attr("y", d => at(d)[1] + (isBig ? 5 : 3))
+    .attr("font-size", playLabelFont).attr("fill", "#555")
+    .attr("font-weight", d => isHighlighted(d.p) ? 700 : null)
+    .text(d => shortTitle(d.p));
+  const items = labs.nodes().map(node => {{
+    const d = node.__data__, [cx, cy] = at(d);
+    const sx = +node.getAttribute("x"), sy = +node.getAttribute("y");
+    // A label the browser cannot measure (a hidden view) is estimated from
+    // its length, so the pass still runs.
+    const b = boxOf(node) || {{
+      x0: sx, x1: sx + node.textContent.length * playLabelFont * 0.6,
+      y0: sy - playLabelFont * 0.8, y1: sy + playLabelFont * 0.25}};
+    return {{cx, cy, r: reach(d), gap: clear, dx: sx - cx, dy: sy - cy,
+            w: b.x1 - b.x0, a: sy - b.y0, dsc: b.y1 - sy,
+            dot: ps.indexOf(d), first: isHighlighted(d.p)}};
+  }});
+  // Every dot is kept clear by the gap a label leaves at its own, so no
+  // label comes nearer another play than the play it names.
+  const keepOff = ps.map(d => {{
+    const [cx, cy] = at(d), r = reach(d) + clear;
+    return {{x0: cx - r, y0: cy - r, x1: cx + r, y1: cy + r}};
+  }});
+  const spots = placeLabels(items, keepOff,
+    {{x0: M.left + 2, y0: 0, x1: w, y1: h - M.bottom - 2}},
+    legendBox ? [legendBox] : []);
+  labs.attr("x", (_, i) => spots[i].x).attr("y", (_, i) => spots[i].y);
 }}
-function shortTitle(p) {{
-  // Play title only -- not poet name.  `p.id` includes the author prefix
-  // ("Aristophanes' Acharnians") so we prefer title_en / title_grc and only
-  // fall back to a trimmed id.
-  let t = (p.title_en || p.title_grc || "").trim();
-  if (!t && p.id) {{
-    // Strip a leading "Author's " or "Author-" prefix from the id.
-    t = p.id.replace(/^[^'\\-\\s]+[\\s\\-']+/, "").trim();
+
+// A drawn element's box, {{x0, y0, x1, y1}}, or null where the browser cannot
+// measure it (an element in a hidden view).
+function boxOf(node) {{
+  let b = null;
+  try {{ b = node.getBBox(); }} catch (e) {{ return null; }}
+  if (!b || !(b.width > 0)) return null;
+  return {{x0: b.x, y0: b.y, x1: b.x + b.width, y1: b.y + b.height}};
+}}
+
+// ---- label placement ----------------------------------------------------
+// A play's label sits right of its dot.  Where that spot would cover text
+// -- a label already placed, or a box in `taken` -- or a box to keep off
+// -- on the scatters, every other play's dot, widened by the gap a label
+// leaves at its own -- or run off the plot, the label takes the first free
+// spot of seven others around the same dot: above right, below right,
+// left, above left, below left, above, below.  Labels are placed in turn,
+// highlighted plays first.  Where no spot is free, a label goes where it
+// covers the least text and crosses the plot's edge least, since neither
+// can then be read, and only between spots equal in that, where it covers
+// the least of the boxes to keep off.  A label never leaves its own dot, so
+// it needs no leader line, and a label with nothing in its way stays where
+// it was.
+//   items:   [{{cx, cy, r, gap, dx, dy, w, a, dsc, dot, first}}] -- the dot's
+//            centre, the radius to clear around it and the gap to leave;
+//            the default baseline start, relative to the centre; the text's
+//            width, ascent and descent; the index of its own dot in
+//            `keepOff`; whether it is placed first
+//   keepOff: [{{x0, y0, x1, y1}}] -- one box per dot, none of which a label
+//            covers but its own dot's
+//   bounds:  {{x0, y0, x1, y1}} -- the area labels stay inside
+//   taken:   [{{x0, y0, x1, y1}}] -- boxes already holding text (optional)
+// Returns each label's baseline start, {{x, y}}, in the order of `items`.
+function placeLabels(items, keepOff, bounds, taken) {{
+  const overlap = (a, b) =>
+    Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)) *
+    Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0));
+  const order = items.map((_, i) => i).sort((i, j) =>
+    (items[j].first ? 1 : 0) - (items[i].first ? 1 : 0) || i - j);
+  const placed = (taken || []).slice();
+  const out = new Array(items.length);
+  for (const i of order) {{
+    const it = items[i];
+    // The corner spots touch the cleared circle at 45 degrees.
+    const k = (it.r + it.gap) * Math.SQRT1_2;
+    const spots = [
+      [it.cx + it.dx,         it.cy + it.dy],
+      [it.cx + k,             it.cy - k - it.dsc],
+      [it.cx + k,             it.cy + k + it.a],
+      [it.cx - it.dx - it.w,  it.cy + it.dy],
+      [it.cx - k - it.w,      it.cy - k - it.dsc],
+      [it.cx - k - it.w,      it.cy + k + it.a],
+      [it.cx - it.w / 2,      it.cy - it.r - it.gap - it.dsc],
+      [it.cx - it.w / 2,      it.cy + it.r + it.gap + it.a],
+    ];
+    let best = null;
+    for (const [sx, sy] of spots) {{
+      const box = {{x0: sx, y0: sy - it.a, x1: sx + it.w, y1: sy + it.dsc}};
+      let text = (box.x1 - box.x0) * (box.y1 - box.y0) - overlap(box, bounds);
+      for (const q of placed) text += overlap(box, q);
+      if (text < 0.5) text = 0;    // half a square pixel is no overlap
+      let near = 0;
+      keepOff.forEach((q, j) => {{ if (j !== it.dot) near += overlap(box, q); }});
+      if (!best || text < best.text || (text === best.text && near < best.near))
+        best = {{x: sx, y: sy, box, text, near}};
+      if (text === 0 && near < 0.5) break;
+    }}
+    placed.push(best.box);
+    out[i] = {{x: best.x, y: best.y}};
   }}
+  return out;
+}}
+// ---- play names ---------------------------------------------------------
+// A title does not identify a play: Sophocles and Euripides both wrote an
+// Electra, and both cite as "El.".  Where two plays of the corpus would carry
+// the same label, the author's citation form is added to both.  Collisions
+// are counted over the whole corpus, not the plays on screen, so a play keeps
+// one label whatever is selected -- and a corpus without a shared title
+// labels exactly as before.
+
+// The short label a play would carry on its own: the Latin abbreviation
+// (Ach., Av., Thesm.), the form used to cite these plays; failing that the
+// English or Greek title, shortened; failing that the id.
+function _ownShortTitle(p) {{
+  const abbr = (p.title_lat_abbr || "").trim();
+  if (abbr) return abbr;
+  const t = (p.title_en || p.title_grc || p.id || "").trim();
   return t.length > 16 ? t.slice(0, 15) + "\\u2026" : t;
+}}
+function _ownLongTitle(p) {{
+  return (p.title_en || p.title_grc || p.id || "").trim();
+}}
+// How a play's author is cited: the Latin abbreviation where the header
+// gives one (Soph., Eur.), else the name as given.
+function authorCite(p) {{
+  return (p.author_lat_abbr || p.author || "").trim();
+}}
+function _sharedBy(labelOf) {{
+  const n = {{}};
+  for (const p of DATA.plays || []) {{
+    const k = labelOf(p);
+    n[k] = (n[k] || 0) + 1;
+  }}
+  return new Set(Object.keys(n).filter(k => n[k] > 1));
+}}
+const _SHARED_SHORT = _sharedBy(_ownShortTitle);
+const _SHARED_LONG = _sharedBy(_ownLongTitle);
+
+// Chart and chip labels: "El." alone, "Soph. El." where another El. exists.
+function shortTitle(p) {{
+  const base = _ownShortTitle(p), who = authorCite(p);
+  return (_SHARED_SHORT.has(base) && who) ? who + " " + base : base;
+}}
+// Visible full titles: "Electra (Sophocles)" where another Electra exists.
+function longTitle(p) {{
+  const base = _ownLongTitle(p);
+  return (_SHARED_LONG.has(base) && p.author) ? base + " (" + p.author + ")" : base;
+}}
+// Hover text always names the author, whatever the corpus holds.
+function playName(p) {{
+  const base = _ownLongTitle(p);
+  return p.author ? base + " (" + p.author + ")" : base;
 }}
 
 // -------------------------------------------------------------------- composition stacked bar
@@ -1389,13 +1721,13 @@ function renderComposition() {{
       .attr("width", bw).attr("height", y(0) - y(d.speakers + d.mutes))
       .attr("fill", "var(--mute)")
       .on("click", () => {{ if (p.dashboard_href) window.location.href = p.dashboard_href; }})
-      .append("title").text(`${{p.title_en || p.id}}: ${{d.speakers}} speakers + ${{d.mutes}} mutes`);
+      .append("title").text(`${{playName(p)}}: ${{d.speakers}} speakers + ${{d.mutes}} mutes`);
     bg.append("rect")
       .attr("x", x0).attr("y", y(d.speakers))
       .attr("width", bw).attr("height", y(0) - y(d.speakers))
       .attr("fill", "var(--speaker)")
       .on("click", () => {{ if (p.dashboard_href) window.location.href = p.dashboard_href; }})
-      .append("title").text(`${{p.title_en || p.id}}: ${{d.speakers}} speakers`);
+      .append("title").text(`${{playName(p)}}: ${{d.speakers}} speakers`);
   }}
   // x labels rotated.
   const xLab = svg.append("g").attr("transform", `translate(0,${{h - M.bottom}})`)
@@ -1416,7 +1748,7 @@ function renderBeatMultiples() {{
     .append("div").attr("class", "sm")
     .style("cursor", "pointer")
     .on("click", (_, p) => {{ if (p.dashboard_href) window.location.href = p.dashboard_href; }});
-  cells.append("div").attr("class", "title").text(p => p.title_en || p.id);
+  cells.append("div").attr("class", "title").text(p => longTitle(p));
   cells.each(function(p) {{
     const svg = d3.select(this).append("svg");
     requestAnimationFrame(() => drawBeatMini(svg, p));
@@ -1425,11 +1757,34 @@ function renderBeatMultiples() {{
 function drawBeatMini(svg, p) {{
   const w = svg.node().clientWidth, h = svg.node().clientHeight;
   svg.attr("viewBox", `0 0 ${{w}} ${{h}}`);
-  const rates = (segOf(p) || {{}}).change_rates || [];
+  const blk = segOf(p) || {{}};
+  const rates = blk.change_rates || [];
   if (!rates.length) return;
   const M = {{top: 4, right: 4, bottom: 12, left: 14}};
-  const x = d3.scaleLinear().domain([0, rates.length - 1]).range([M.left, w - M.right]);
   const y = d3.scaleLinear().domain([0, 1]).range([h - M.bottom, M.top]);
+
+  // X mapping.  Default: evenly spaced transition index.  Word mode: place
+  // each transition at its cumulative word position (stage-time).  The
+  // series omits the bracket transitions (empty opener and empty terminal),
+  // so its offset against words_per_segment cannot be recovered from the
+  // lengths; the payload ships it as change_rates_start -- the index of the
+  // segment the first transition departs from.
+  const words = blk.words_per_segment || [];
+  const startI = blk.change_rates_start || 0;
+  let xpos = null;
+  if (STATE.beatXMode === "word" && words.length >= rates.length + startI) {{
+    const prefix = []; let acc = 0;
+    for (let k = 0; k < words.length; k++) {{ acc += (words[k] || 0); prefix.push(acc); }}
+    if (acc > 0) {{
+      const x = d3.scaleLinear().domain([0, acc]).range([M.left, w - M.right]);
+      xpos = i => x(prefix[startI + i]);
+    }}
+  }}
+  if (!xpos) {{
+    const x = d3.scaleLinear().domain([0, Math.max(1, rates.length - 1)]).range([M.left, w - M.right]);
+    xpos = i => x(i);
+  }}
+
   // Mean (drama-change rate).
   const mu = mean(rates);
   svg.append("line")
@@ -1437,10 +1792,17 @@ function drawBeatMini(svg, p) {{
     .attr("y1", y(mu)).attr("y2", y(mu))
     .attr("stroke", "var(--speaker)").attr("stroke-dasharray", "2,2").attr("stroke-width", 1);
   svg.append("path")
-    .attr("fill", "none").attr("stroke", "var(--beat)").attr("stroke-width", 1.1)
-    .attr("d", d3.line().x((_, i) => x(i)).y(d => y(d))(rates));
+    .attr("fill", "none").attr("stroke", "var(--beat)").attr("stroke-width", w > 600 ? 1.5 : 1.1)
+    .attr("d", d3.line().x((_, i) => xpos(i)).y(d => y(d))(rates));
+  // A dot at every transition so individual segments stay locatable even
+  // when the line packs them tightly (word mode).  Radius grows with cell
+  // width so the dots remain visible in the enlarged fullscreen view.
+  const r = w > 600 ? 2.4 : 1.5;
+  svg.append("g").selectAll("circle").data(rates).enter().append("circle")
+    .attr("cx", (_, i) => xpos(i)).attr("cy", d => y(d))
+    .attr("r", r).attr("fill", "var(--beat)");
   svg.append("text").attr("x", w - M.right).attr("y", h - 2)
-    .attr("text-anchor", "end").attr("font-size", 9)
+    .attr("text-anchor", "end").attr("font-size", w > 600 ? 11 : 9)
     .attr("fill", "var(--muted)").text("\\u03BC = " + fmt(mu));
 }}
 
@@ -1449,8 +1811,8 @@ function drawBeatMini(svg, p) {{
 //   each play's segment range so distribution shapes are comparable across
 //   plays of different lengths.  Three-state encoding:
 //     transparent  -> chorus not in characters_present for that segment
-//     light grey   -> chorus is on stage but silent (0 verses)
-//     red ramp     -> chorus speaks; intensity ~ sqrt(verses), saturating
+//     light grey   -> chorus is on stage but silent (0 words)
+//     red ramp     -> chorus speaks; intensity ~ sqrt(words), saturating
 //                     at the corpus maximum (so cross-play comparison of
 //                     intensity is honest).
 //   Sort order: genre -> author -> title -> chorus name.
@@ -1458,7 +1820,7 @@ function renderChorusBeat() {{
   const svg = d3.select("#chorus-beat-chart");
   svg.selectAll("*").remove();
   const ps = activePlays();
-  const muteKey = STATE.muteMode || "stage";
+  const muteKey = STATE.muteMode || "full";
   const aggKey  = STATE.aggregateChorus ? "agg" : "raw";
   const variantKey = muteKey + "_" + aggKey;
 
@@ -1469,11 +1831,11 @@ function renderChorusBeat() {{
     if (!seg) return;
     const cd = (seg.chorus_data || {{}})[variantKey] || [];
     cd.forEach(ch => {{
-      if (!ch || !ch.verses || !ch.verses.length) return;
+      if (!ch || !ch.words || !ch.words.length) return;
       rows.push({{
         play: p,
         chorus: ch,
-        nSegments: ch.verses.length,
+        nSegments: ch.words.length,
       }});
     }});
   }});
@@ -1510,12 +1872,23 @@ function renderChorusBeat() {{
   const h = padTop + rows.length * rowH + padBottom;
   svg.attr("height", h).attr("viewBox", `0 0 ${{w}} ${{h}}`);
 
-  // Colour scale: sqrt against the global max verses across visible rows,
+  // Colour scale: sqrt against the global max words across visible rows,
   // so a cell's saturation is directly comparable across the corpus.
-  const allVerses = rows.flatMap(r => r.chorus.verses).filter(v => v > 0);
-  const maxV = allVerses.length ? d3.max(allVerses) : 1;
+  const allWords = rows.flatMap(r => r.chorus.words).filter(v => v > 0);
+  const maxV = allWords.length ? d3.max(allWords) : 1;
   const color = d3.scaleSqrt().domain([1, maxV]).range(["#fcbba1", "#a50f15"]);
   const colorSilent = "#bbbbbb";
+  // A song whose text is not transmitted: hatched in the ramp's darkest red
+  // on a pale ground, so it reads as speech with nothing in it.
+  const hatchId = "chorus-notext-hatch";
+  svg.append("defs").append("pattern").attr("id", hatchId)
+    .attr("patternUnits", "userSpaceOnUse").attr("width", 4).attr("height", 4)
+    .attr("patternTransform", "rotate(45)")
+    .call(p => {{
+      p.append("rect").attr("width", 4).attr("height", 4).attr("fill", "#fde0dd");
+      p.append("line").attr("x1", 0).attr("y1", 0).attr("x2", 0).attr("y2", 4)
+        .attr("stroke", "#a50f15").attr("stroke-width", 1.5);
+    }});
 
   // Genre/author bands: subtle horizontal stripes behind rows in the same
   // (genre, author) group so the eye can read sub-corpora at a glance.
@@ -1573,7 +1946,7 @@ function renderChorusBeat() {{
         return playRows > 1 ? `${{t}} · ${{c}}` : t;
       }})
       .on("click", () => {{ if (r.play.dashboard_href) window.location.href = r.play.dashboard_href; }})
-      .append("title").text(`${{r.play.title_en || r.play.id}} - ${{r.chorus.name}}`);
+      .append("title").text(`${{playName(r.play)}} - ${{r.chorus.name}}`);
 
     // Row baseline: a thin line spanning the full cell area, so that
     // absent segments at the start/end of the row do not visually
@@ -1587,15 +1960,23 @@ function renderChorusBeat() {{
       .attr("stroke", "#d8d8d8").attr("stroke-width", 1)
       .attr("shape-rendering", "crispEdges");
 
-    const n = r.chorus.verses.length;
+    const n = r.chorus.words.length;
     const cellSpan = (w - padR - labelW) / n;
     for (let s = 0; s < n; s++) {{
-      const v = r.chorus.verses[s];
+      const v = r.chorus.words[s];
       const pres = !!r.chorus.present[s];
-      let fill;
-      if (v > 0)      fill = color(v);
-      else if (pres)  fill = colorSilent;
-      else continue;  // transparent: skip drawing entirely
+      const speaks = !!(r.chorus.speaks || [])[s];
+      // Four states.  A speech without transmitted words is kept apart from
+      // silence: the chorus performs there, and the manuscripts record only
+      // that it did (the XOPOY interludes).
+      let fill, what;
+      if (v > 0) {{
+        fill = color(v); what = v + " word" + (v === 1 ? "" : "s");
+      }} else if (speaks) {{
+        fill = "url(#" + hatchId + ")"; what = "performs, text not transmitted";
+      }} else if (pres) {{
+        fill = colorSilent; what = "present, silent";
+      }} else continue;  // transparent: skip drawing entirely
       svg.append("rect")
         .attr("x", labelW + s * cellSpan)
         .attr("y", y0 + 1)
@@ -1605,9 +1986,8 @@ function renderChorusBeat() {{
         .style("cursor", "pointer")
         .on("click", () => {{ if (r.play.dashboard_href) window.location.href = r.play.dashboard_href; }})
         .append("title").text(
-          `${{r.play.title_en || r.play.id}} - ${{r.chorus.name}}\\n` +
-          `segment ${{s + 1}} / ${{n}}\\n` +
-          (v > 0 ? `${{v}} verse${{v === 1 ? "" : "s"}}` : "present, silent"));
+          `${{playName(r.play)}} - ${{r.chorus.name}}\\n` +
+          `segment ${{s + 1}} / ${{n}}\\n` + what);
     }}
   }});
 }}
@@ -1628,33 +2008,47 @@ function renderPlaysTable() {{
     // trivially 1.0 (every visible character speaks) and shifts the
     // female-share to count only sexed *speakers*.
     ["spk/cast", p => {{
-      const c = (p.composition || {{}})[STATE.muteMode || "stage"] || {{}};
+      const c = (p.composition || {{}})[STATE.muteMode || "full"] || {{}};
       return fmt(c.speakers_share, 3);
     }}, true],
     ["col/spk", p => {{
-      const c = (p.composition || {{}})[STATE.muteMode || "stage"] || {{}};
+      const c = (p.composition || {{}})[STATE.muteMode || "full"] || {{}};
       return fmt(c.collective_speakers_share, 3);
     }}, true],
     ["f/(f+m)", p => {{
-      const c = (p.composition || {{}})[STATE.muteMode || "stage"] || {{}};
+      const c = (p.composition || {{}})[STATE.muteMode || "full"] || {{}};
       return fmt(c.female_share, 3);
     }}, true],
     ["edges",    p => segOf(p).numEdges, true],
     ["density",  p => fmt(segOf(p).density, 3), true],
-    ["avg deg",  p => fmt(segOf(p).averageDegree, 2), true],
-    // Segment count is model-specific under the sd spine: dialogic /
-    // cospeech fold away boundaries triggered only by non-nodes (e.g. a
+    // Sorted on the raw value: this is the one column here whose formatted
+    // text can reach two digits, and "12.74" precedes "3.67" as a string.
+    ["avg deg",  p => fmt(segOf(p).averageDegree, 2), true,
+      p => segOf(p).averageDegree || 0],
+    // Segment count is model-specific under the sd spine: the two
+    // speaking models fold away boundaries triggered only by non-nodes (e.g. a
     // mute's entrance), so this column drops when you switch the model.
-    // For div2 / div3 it is fixed (textual divisions).
+    // For large-seq / middle-seq it is fixed (textual divisions).
     ["seg",      p => segOf(p).num_segments, true],
     ["DCR",      p => fmt(mean(segOf(p).change_rates || []), 3), true],
     ["all-in",   p => fmt((segOf(p).segment_indices || {{}}).all_in_index || 0, 3), true],
-    ["final",    p => fmt((segOf(p).segment_indices || {{}}).final_scene_size || 0, 3), true],
+    ["final share", p => fmt((segOf(p).segment_indices || {{}}).final_segment_cast_share || 0, 3), true],
+    // Sorted by the share, not by the name the cell happens to start with:
+    // the question this column answers is how dominant the leading speaker
+    // is, and Aristophanic speaker ids are in no useful order.
     ["top spk",  p => {{
       const sd = segOf(p).speech_distribution || {{}};
-      return (sd.top_speaker_id || "\\u2014") + " (" + fmt((sd.top_speaker_verse_share || 0) * 100, 1) + "%)";
-    }}],
-    ["Gini",     p => fmt((segOf(p).speech_distribution || {{}}).gini_verses || 0, 3), true],
+      const who = (sd.top_speaker_ids || []).join(", ") || "\\u2014";
+      return who + " (" + fmt((sd.top_speaker_word_share || 0) * 100, 1) + "%)";
+    }}, false,
+      p => (segOf(p).speech_distribution || {{}}).top_speaker_word_share || 0],
+    ["Gini",     p => fmt((segOf(p).speech_distribution || {{}}).gini_words || 0, 3), true],
+    // Effective speakers (1 / sum of squared shares).  Beside the Gini
+    // because the two answer the same question differently: the Gini
+    // weights by rank and so responds to how finely the cast list is cut,
+    // this weights by share and barely notices a one-line role.  Read
+    // together, a gap between them is a long tail of small parts.
+    ["eff spk",  p => fmt((segOf(p).speech_distribution || {{}}).effective_speakers || 0, 2), true],
     // Top-speaker temporal Gini: how concentrated their speech is
     // across the play's segments.  Steady leads (Dikaiopolis, Trygaios)
     // sit low; burst leads (Lysistrate, Praxagora) sit high.
@@ -1681,8 +2075,14 @@ function drawTable(sel, cols, rows, sortKey, sortDir, onClickRow) {{
       drawTable(sel, cols, rows, sortKey, sortDir, onClickRow);
     }});
   const sortCol = cols.find(c => c[0] === sortKey) || cols[0];
+  // A column may carry a 4th element: the value to order by, for when the
+  // cell's text is not what the reader wants to sort on.  Without it the
+  // sort is lexicographic on whatever is displayed, so "allantopoles
+  // (31.9%)" orders by the speaker's name, and a formatted number orders by
+  // its digits -- putting "12.74" before "3.67".
+  const keyOf = sortCol[3] || sortCol[1];
   const sorted = rows.slice().sort((a, b) => {{
-    const va = sortCol[1](a), vb = sortCol[1](b);
+    const va = keyOf(a), vb = keyOf(b);
     if (typeof va === "number" && typeof vb === "number") return sortDir * (va - vb);
     return sortDir * String(va).localeCompare(String(vb));
   }});
@@ -1705,124 +2105,106 @@ function render() {{
   renderTabs();
   renderPlaysSelector();
   renderKPIs();
-  // Density vs size, with an iso-degree reference curve at the corpus median
-  // avg-degree (`density = k / (n - 1)`).  Plays on the curve have the
-  // median per-character interaction count; plays above are denser than
-  // expected for their size, plays below are sparser.  This is the trace
-  // of "constant avg-degree" -- a descriptive reference, not a regression.
-  //
-  // The curve is undefined where n <= k (it would require density > 1).
-  // Dots in that domain are drawn hollow + a tooltip note so the eye
-  // doesn't accidentally compare them to a curve that isn't there.
-  // k_median for the iso-curve: ANCHOR set only, so display-only
-  // plays (rigged variants, ad-hoc additions the user wants to compare
-  // against a stable reference) do not pollute the median.  Falls back
-  // to activePlays if no anchors are set (graceful degradation).
-  const _anchorForK = anchorPlays();
-  const _kSource = _anchorForK.length ? _anchorForK : activePlays();
-  const kSize = median(_kSource.map(p => segOf(p).averageDegree || 0));
+  // Density vs order.  Density falls with cast size mechanically --
+  // d = k / (n - 1) is an identity -- so a large play reads sparse beside a
+  // small one whatever its connectivity.  An iso-degree curve once answered
+  // that here and was removed for its premises.  What answers it now is k
+  // itself, which the chart holds only implicitly: on request the dots are
+  // coloured by it, computed from the chart's own two coordinates and so
+  // adding no premise, and a play whose characters share the stage with
+  // unusually many others shows as an unusually dark dot in whichever view
+  // is active, and only there.  The pair-lines compare each play with its
+  // nearest-order neighbours without assuming anything.
+  const toneByDegree = STATE.toneByDegree ? {{tone: {{
+    value: s => s.averageDegree,
+    // From a quarter of the corpus anchor to twice it: 2 to 16 for the
+    // comedies, whose values run 2.7 to 15.5 across every view.  The legend
+    // marks the two ends and the anchor.
+    domain: [DEGREE_ANCHOR / 4, DEGREE_ANCHOR * 2],
+    legend: [DEGREE_ANCHOR / 4, DEGREE_ANCHOR, DEGREE_ANCHOR * 2],
+    caption: "characters met, on average",
+    title: "average degree",
+  }}}} : null;
   drawScatter("#sizing-chart",
     s => s.size, s => s.density,
-    "order (kept characters)", "density",
+    "order (number of nodes/characters)", "density",
     (svg, x, y, ps, geom) => {{
-      // ─── Pair lines (drawn first, so iso-curve and dots overlay) ──
+      // ─── Pair lines (drawn first, so the dots overlay them) ───────
       // For every pair of plays with order difference <= 5, draw a
-      // thin grey segment between them.  This is the model-free
-      // complement to the iso-curve: short lines = local-neighbourhood
+      // thin red segment between them.  Short lines = local-neighbourhood
       // density variation; tall lines = a play whose density does not
       // match its nearest-order companions.  Lysistrata's incident
       // lines stand out visibly because there is no nearby-order play
       // with comparable density.
+      //
+      // A line's height is NOT the connectivity gap.  Since d = k/(n-1),
+      //     d_hi / d_lo = (k_hi / k_lo) * ((n_lo - 1) / (n_hi - 1)),
+      // so the residual size difference inside the window is still in
+      // there: Thesmophoriazusae and Wealth have k = 6.93 and 6.94 -- the
+      // same connectivity -- and are joined by a line 14% tall, which is
+      // exactly their 16/14.  The tooltip therefore carries both excesses,
+      // so a reader can see which of the two a line is showing.
       if (STATE.showPairLines) {{
+        // fill none: the lines are paths, and a bowed path would otherwise
+        // be filled black.
         const pairG = svg.append("g").attr("class", "pair-lines")
           .attr("stroke", "#d62728")
           .attr("stroke-width", 1.5)
+          .attr("fill", "none")
           .attr("opacity", 0.75);
+        const excess = (a, b) => {{
+          const hi = Math.max(a, b), lo = Math.min(a, b);
+          return lo > 0 ? ((hi / lo - 1) * 100).toFixed(1) + "%" : "n/a";
+        }};
+        // Where each dot is actually drawn, coincidence offset included.
+        const at = d => [x(d.x) + (d._dx || 0), y(d.y) + (d._dy || 0)];
+        const screen = ps.map(at);
         for (let i = 0; i < ps.length; i++) {{
           for (let j = i + 1; j < ps.length; j++) {{
             if (Math.abs(ps[i].x - ps[j].x) > 5) continue;
-            // Compute pairwise density excess (symmetric: max/min - 1)
-            // for the tooltip so the line is interrogable.
-            const dHi = Math.max(ps[i].y, ps[j].y);
-            const dLo = Math.min(ps[i].y, ps[j].y);
-            const pct = dLo > 0 ? ((dHi / dLo - 1) * 100).toFixed(1) : "n/a";
-            const ln = pairG.append("line")
-              .attr("x1", x(ps[i].x)).attr("y1", y(ps[i].y))
-              .attr("x2", x(ps[j].x)).attr("y2", y(ps[j].y));
+            const kI = segOf(ps[i].p).averageDegree || 0;
+            const kJ = segOf(ps[j].p).averageDegree || 0;
+            const others = screen.filter((_, k) => k !== i && k !== j);
+            const ln = pairG.append("path")
+              .attr("d", pairLinePath(screen[i], screen[j], others,
+                                      geom.dotR));
             ln.append("title").text(
-              (ps[i].p.title_en || ps[i].p.id) + " (n=" + ps[i].x + ", d=" + ps[i].y.toFixed(3) + ")\\n" +
+              playName(ps[i].p) + " (n=" + ps[i].x + ", d=" + ps[i].y.toFixed(3) + ", k=" + kI.toFixed(2) + ")\\n" +
               "\\u2194 " +
-              (ps[j].p.title_en || ps[j].p.id) + " (n=" + ps[j].x + ", d=" + ps[j].y.toFixed(3) + ")\\n" +
+              playName(ps[j].p) + " (n=" + ps[j].x + ", d=" + ps[j].y.toFixed(3) + ", k=" + kJ.toFixed(2) + ")\\n" +
               "\\u0394n=" + Math.abs(ps[i].x - ps[j].x).toFixed(0) +
-              "  \\u2022  density excess " + pct + "%");
+              "  \\u2022  density excess " + excess(ps[i].y, ps[j].y) +
+              "  \\u2022  avg-degree excess " + excess(kI, kJ));
           }}
         }}
       }}
-      // ─── Iso-degree curve (existing) ───────────────────────────────
-      const xDom = x.domain(), yDom = y.domain();
-      const step = Math.max(0.25, (xDom[1] - xDom[0]) / 240);
-      const pts = [];
-      for (let n = Math.max(2, xDom[0]); n <= xDom[1]; n += step) {{
-        const d = kSize / (n - 1);
-        if (d >= yDom[0] && d <= yDom[1]) pts.push([n, d]);
-      }}
-      if (pts.length < 2) return;
-      const lineGen = d3.line().x(p => x(p[0])).y(p => y(p[1]));
-      svg.append("path")
-        .attr("d", lineGen(pts))
-        .attr("fill", "none")
-        .attr("stroke", "#8b0000")
-        .attr("stroke-width", 3)
-        .attr("stroke-dasharray", "8,5")
-        .attr("opacity", 1)
-        .append("title").text("iso-degree curve at k = " + kSize.toFixed(2));
-    }},
-    /*showMedian=*/false,
-    /*outOfDomain=*/(d) => d.x <= kSize + 1);
+    }}, toneByDegree);
   drawScatter("#scaling-chart",
     s => s.size, s => s.averageDegree,
-    "order (kept characters)", "average degree");
-  drawScatter("#topology-chart",
-    s => s.density, s => s.averageDegree,
-    "density", "average degree");
+    "order (number of nodes/characters)", "average degree");
+  // No density x average-degree chart: density is fixed by order and
+  // average degree (d = k / (n - 1)), so it would redraw the two charts
+  // above from a third angle.
   drawScatter("#typology-chart",
     s => mean(s.change_rates || []),
     s => stdev(s.change_rates || []),
     "drama-change rate", "\\u03C3 (change-rate stdev)");
-  // Gini (verses) x average degree -- speech-inequality x network-density.
-  // High Gini + high avg-deg = star-topology play (a few dominant speakers
-  // also serve as connective hubs).  Low Gini + high avg-deg = ensemble.
-  drawScatter("#gini-avgdeg-chart",
-    s => (s.speech_distribution || {{}}).gini_verses || 0,
+  // Effective speakers x average degree -- how many voices carry the play
+  // against how many others a character meets.  One speech axis, where
+  // there were two charts: Gini, top-speaker share and effective speakers
+  // summarise one word distribution and move together across the comedies
+  // (share and effective speakers at rank correlation -0.84), so pairing
+  // each with average degree drew much the same picture again.  Effective
+  // speakers reads the whole distribution, where the share reads one
+  // character, and unlike the Gini it does not track order (-0.33 to -0.07
+  // over the eighteen views, against +0.73 to +0.84), which is already the
+  // x-axis of two charts.  The y-axis responds to the spine and the model;
+  // the x-axis moves only with the aggregation toggle, which merges
+  // speakers.
+  drawScatter("#esp-avgdeg-chart",
+    s => (s.speech_distribution || {{}}).effective_speakers || 0,
     s => s.averageDegree,
-    "Gini (verses)", "average degree");
-  // Top-speaker share x Gini -- lead dominance x full-distribution
-  // inequality.  Both are speech-corpus metrics (independent of the
-  // network model), so the chart is invariant under the mute toggle.
-  // The two diverge when the lead does not dominate but the rest of
-  // the cast is steeply distributed: that quadrant (low share + high
-  // Gini) is the "coalitional protagonist" pattern -- a leader
-  // amplified by strong deuteragonists rather than a sole hero.
-  drawScatter("#share-gini-chart",
-    s => (s.speech_distribution || {{}}).top_speaker_verse_share || 0,
-    s => (s.speech_distribution || {{}}).gini_verses || 0,
-    "top-speaker share", "Gini (verses)");
-  // Top-speaker share x average degree -- lead dominance x network
-  // density.  The third pairwise plot over share, Gini, and avg-deg;
-  // share and Gini are speech metrics, avg-deg is the network metric,
-  // so this chart responds to the mute toggle through the avg-deg
-  // axis while the share axis stays fixed.  Methodologically the most
-  // diagnostic of the three: under mutes-in, single-hero plays
-  // (high share) cluster at moderate density while the
-  // coalitional/ensemble plays scatter into both denser (Lysistrata)
-  // and sparser regions; under mutes-out the anti-correlation
-  // attenuates as the staging-density artefact in Lysistrata
-  // dissolves.  The chart is therefore where the two-model
-  // methodology becomes visually legible on a single scatter.
-  drawScatter("#share-avgdeg-chart",
-    s => (s.speech_distribution || {{}}).top_speaker_verse_share || 0,
-    s => s.averageDegree,
-    "top-speaker share", "average degree");
+    "effective speakers", "average degree");
   renderComposition();
   renderBeatMultiples();
   renderChorusBeat();
@@ -1864,8 +2246,15 @@ document.querySelectorAll('input[name="mute-mode"]').forEach(r => {{
   }});
 }});
 
+// Beat-multiples x-axis mode toggle (word-position vs segment index).
+const _beatXBox = document.getElementById("beat-xmode");
+if (_beatXBox) _beatXBox.addEventListener("change", (e) => {{
+  STATE.beatXMode = e.target.checked ? "word" : "segment";
+  renderBeatMultiples();
+}});
+
 // Global partOf aggregation toggle.  Now drives segOf(p), so every chart,
-// the iso-curve / pair-lines, the KPI ranges and the plays table react --
+// the pair-lines, the KPI ranges and the plays table react --
 // a full render() keeps the whole dashboard in sync.
 const _aggBox = document.getElementById("aggregate-chorus");
 if (_aggBox) _aggBox.addEventListener("change", (e) => {{
@@ -1883,21 +2272,21 @@ if (_pairBox) _pairBox.addEventListener("change", (e) => {{
   STATE.showPairLines = e.target.checked;
   render();
 }});
+// Density x order: colour the dots by average degree, or by the chip colours.
+const _toneBox = document.getElementById("tone-by-degree");
+if (_toneBox) _toneBox.addEventListener("change", (e) => {{
+  STATE.toneByDegree = e.target.checked;
+  render();
+}});
 
-// Plays-selector quick actions.  Each rewrites STATE.selectedPlays and
-// STATE.anchorPlays in lock-step (anchor = selected for sel-all / -none
-// / -invert) so the buttons produce predictable states without leaving
-// orphan display-only chips.  Per-chip refinement still works as before.
+// Plays-selector quick actions.  Each rewrites STATE.selectedPlays.
 document.getElementById("sel-all").addEventListener("click", () => {{
-  const all = new Set(DATA.plays.map(p => _playKey(p)));
-  STATE.selectedPlays = all;
-  STATE.anchorPlays   = new Set(all);
+  STATE.selectedPlays = new Set(DATA.plays.map(p => _playKey(p)));
   renderActiveFilters();
   render();
 }});
 document.getElementById("sel-none").addEventListener("click", () => {{
   STATE.selectedPlays = new Set();
-  STATE.anchorPlays   = new Set();
   renderActiveFilters();
   render();
 }});
@@ -1908,12 +2297,11 @@ document.getElementById("sel-invert").addEventListener("click", () => {{
     if (!STATE.selectedPlays.has(k)) next.add(k);
   }}
   STATE.selectedPlays = next;
-  STATE.anchorPlays   = new Set(next);
   renderActiveFilters();
   render();
 }});
-document.getElementById("reset-colors").addEventListener("click", () => {{
-  STATE.playColors = {{}};
+document.getElementById("clear-highlights").addEventListener("click", () => {{
+  STATE.highlighted = new Set();
   render();
 }});
 
@@ -2030,33 +2418,38 @@ function updateStickyOffsets() {{
 updateStickyOffsets();
 window.addEventListener('resize', updateStickyOffsets);
 </script>
+<!--FIGURE_EXPORT_JS-->
 </body>
 </html>
 """
 
 
-def _html_escape(s: str) -> str:
-    return (s.replace("&", "&amp;").replace("<", "&lt;")
-             .replace(">", "&gt;").replace('"', "&quot;").replace("'", "&#39;"))
 
 
 def write_corpus_dashboard(corpus_data: Dict, out_path: Path) -> Path:
     title = corpus_data.get("name") or "Corpus dashboard"
     authors = corpus_data.get("authors") or []
     sub_parts = [f"{len(corpus_data.get('plays', []))} plays"]
+    # The author names come from the TEI headers; escape them, as the title is.
     if authors:
-        sub_parts.append(", ".join(authors) if len(authors) <= 5 else f"{len(authors)} authors")
+        sub_parts.append(_html_escape(", ".join(authors)) if len(authors) <= 5
+                         else f"{len(authors)} authors")
     sub_parts.append("dashboard generated by SkeneGraph-Net")
     subtitle = " &middot; ".join(sub_parts)
-    data_json = json.dumps(corpus_data, ensure_ascii=False, sort_keys=True)
+    data_json = _json_for_script(corpus_data)
     html = _TEMPLATE.format(
         title=_html_escape(title),
         subtitle=subtitle,
         data_json=data_json,
     )
     # Inject the Methods tab via plain replace so KaTeX's literal `{` and
-    # `}` don't collide with `str.format` placeholders.
+    # `}` don't collide with `str.format` placeholders.  The figure exporter
+    # and the inlined d3/KaTeX ride the same mechanism, for the same reason;
+    # the libraries go in last, so no later replace scans them.
     html = html.replace("<!--METHODS_HTML-->", methods_panel_html())
+    html = html.replace(CSS_PLACEHOLDER, figure_export_css())
+    html = html.replace(JS_PLACEHOLDER, figure_export_js())
+    html = html.replace(VENDOR_PLACEHOLDER, vendor_assets_html())
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding="utf-8")
     return out_path

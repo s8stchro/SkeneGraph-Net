@@ -1,0 +1,3696 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.tei-c.org/release/xml/tei/custom/schema/relaxng/tei_all.rng" type="application/xml" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?xml-model href="http://www.tei-c.org/release/xml/tei/custom/schema/relaxng/tei_all.rng" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="../skenegraph.sch" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<TEI xmlns="http://www.tei-c.org/ns/1.0">
+   <teiHeader>
+      <fileDesc>
+
+         <titleStmt>
+            <title xml:lang="grc">Ἀχαρνῆς</title>
+            <title xml:lang="lat">
+               <choice>
+                  <expan>Acharnenses</expan>
+                  <abbr>Ach.</abbr>
+               </choice>
+            </title>
+            <title xml:lang="en">Acharnians</title>
+            <author xml:lang="grc">Ἀριστοφάνης</author>
+            <author xml:lang="en">Aristophanes</author>
+            <editor xml:id="sc">Stylianos Chronopoulos</editor>
+
+            <respStmt>
+               <resp>Revised digital edition with scene divisions and stage directions prepared
+                  by</resp>
+               <name ref="#sc">Stylianos Chronopoulos</name>
+            </respStmt>
+            <respStmt>
+               <resp>Base digital text prepared under the supervision of</resp>
+               <name>Lisa Cerrato</name>
+               <name>William Merrill</name>
+               <name>Elli Mylonas</name>
+               <name>David Smith</name>
+            </respStmt>
+            <respStmt>
+               <resp>TEI P5 and EpiDoc conversion (digital editor)</resp>
+               <persName>Aurélien Berra</persName>
+            </respStmt>
+            <respStmt>
+               <resp>Principal investigator, Perseus Project</resp>
+               <name>Gregory Crane</name>
+            </respStmt>
+            <sponsor>Perseus Project, Tufts University</sponsor>
+            <funder>The Annenberg CPB/Project</funder>
+         </titleStmt>
+
+         <editionStmt>
+            <edition> Revised digital edition with scene divisions and stage directions, based on
+               the Perseus Digital Library text (tlg0019.tlg001.perseus-grc2, CC BY-SA 4.0).
+            </edition>
+         </editionStmt>
+
+         <publicationStmt>
+            <publisher>SkeneGraph project</publisher>
+            <pubPlace>Ioannina</pubPlace>
+            <date when="2025">2025</date>
+
+            <availability status="free">
+               <p> This edition is prepared for research purposes as part of the SkeneGraph project
+                     (<ref target="https://zenodo.org/records/18505804">Zenodo record</ref>). </p>
+               <licence target="https://creativecommons.org/licenses/by-sa/4.0/"> The base Greek
+                  text is reproduced from the Perseus Digital Library (Trustees of Tufts University)
+                  and is made available under the Creative Commons Attribution-ShareAlike 4.0
+                  International licence (CC BY-SA 4.0). The additional editorial content of this
+                  edition — scene divisions, dramatic structure annotations, and stage directions —
+                  was prepared by Stylianos Chronopoulos (2025) and is released under the same CC
+                  BY-SA 4.0 licence. </licence>
+            </availability>
+         </publicationStmt>
+
+         <sourceDesc>
+            <bibl type="digitalSource">
+               <author>Aristophanes</author>
+               <title level="m">Acharnians</title>
+               <respStmt>
+                  <resp>Digitised under the supervision of</resp>
+                  <name>Lisa Cerrato</name>
+                  <name>William Merrill</name>
+                  <name>Elli Mylonas</name>
+                  <name>David Smith</name>
+               </respStmt>
+               <respStmt>
+                  <resp>TEI P5 and EpiDoc conversion</resp>
+                  <persName>Aurélien Berra</persName>
+               </respStmt>
+               <publisher>Trustees of Tufts University</publisher>
+               <pubPlace>Medford, MA</pubPlace>
+               <date type="release" when="1996">Perseus 2.0 (1996)</date>
+               <idno type="filename">tlg0019.tlg001.perseus-grc2.xml</idno>
+               <idno type="CTS-URN">urn:cts:greekLit:tlg0019.tlg001.perseus-grc2</idno>
+               <ref
+                  target="https://github.com/PerseusDL/canonical-greekLit/blob/master/data/tlg0019/tlg001/tlg0019.tlg001.perseus-grc2.xml"
+                  > Perseus Canonical Greek Literature Repository (GitHub) </ref>
+               <note type="licence"> Available under the Creative Commons Attribution-ShareAlike 4.0
+                  International licence (CC BY-SA 4.0): <ref
+                     target="https://creativecommons.org/licenses/by-sa/4.0/">
+                     https://creativecommons.org/licenses/by-sa/4.0/ </ref>. </note>
+            </bibl>
+            <bibl type="printSource">
+               <author>Aristophanes</author>
+               <title level="m">Aristophanis Comoediae</title>
+               <editor>F. W. Hall</editor>
+               <editor>W. M. Geldart</editor>
+               <biblScope unit="volume">I</biblScope>
+               <pubPlace>Oxford</pubPlace>
+               <publisher>Clarendon Press</publisher>
+               <date when="1906">1906</date>
+               <ref
+                  target="https://archive.org/details/aristophaniscomo01arisuoft/page/n21/mode/2up">
+                  Internet Archive </ref>
+            </bibl>
+         </sourceDesc>
+      </fileDesc>
+      <encodingDesc>
+         <classDecl>
+            <!-- Taxonomy for @type on <move> -->
+            <taxonomy xml:id="move-type">
+               <category xml:id="entrance">
+                  <catDesc>Character arrives on stage.</catDesc>
+               </category>
+               <category xml:id="exit">
+                  <catDesc>Character leaves the stage. <att>ana</att> forbidden; state inherits from
+                     the character's most recent prior <val>entrance</val>, <val>onStage</val>, or
+                        <val>state-change</val>.</catDesc>
+               </category>
+               <category xml:id="onStage">
+                  <catDesc>State assertion at a non-transition moment (opening or closing tableau;
+                     with empty <att>who</att>, marks an empty stage).</catDesc>
+               </category>
+               <category xml:id="state-change">
+                  <catDesc>Character transitions to a new perception, visibility or vitality state
+                     without entering or leaving. <att>ana</att> required.</catDesc>
+               </category>
+               <category xml:id="merge">
+                  <catDesc>Split parts re-unify (e.g. semichoruses into chorus). <att>ana</att> not
+                     used.</catDesc>
+               </category>
+               <category xml:id="split">
+                  <catDesc>A unified collective divides into parts. <att>ana</att> not
+                     used.</catDesc>
+               </category>
+               <category xml:id="crossing">
+                  <catDesc>A figure crosses the stage’s field of perception within a single beat and
+                     is gone — seen in passing or heard from off-stage; the personnel on stage
+                     is identical before and after, so the move adds no one to a segment’s
+                     cast. <att>ana</att> required, naming what the crossing was rather than a
+                     state.</catDesc>
+               </category>
+            </taxonomy>
+               <taxonomy xml:id="genre">
+         <category xml:id="comedy">
+            <catDesc>Comedy</catDesc>
+         </category>
+         <category xml:id="tragedy">
+            <catDesc>Tragedy</catDesc>
+         </category>
+      </taxonomy>
+   </classDecl>
+         <editorialDecl>
+            <interpretation>
+               <p>Beyond the <gi>move</gi>-type classification declared in the <gi>taxonomy</gi>
+                  above, the encoding carries an interpretive layer recording the dramaturgical
+                  state of characters and the mode in which roles are realised. These are not
+                  classifications of the annotated element but analytic readings asserted over it,
+                  and are therefore expressed through <gi>interp</gi> vocabularies kept in the
+                     <gi>standOff</gi> outside this header, and pointed to by the <att>ana</att>
+                  attribute.</p>
+
+               <p>The <ref target="#move-ana">move-ana</ref> vocabulary supplies the character-state
+                  values for <att>ana</att> on <gi>move</gi>. The states are organised as
+                  antithetical pairs (location, concealment, condition); the first value of each
+                  pair is the unmarked default, so an absent or partial <att>ana</att> asserts the
+                  default of every pair it does not name. The <ref target="#performers"
+                     >performers</ref> vocabulary supplies the mode-of-realisation values for
+                     <att>ana</att> on <gi>actor</gi> in the <gi>castList</gi>. The authoritative
+                  definitions live in those <gi>interpGrp</gi>s and are deliberately not duplicated
+                  here.</p>
+            </interpretation>
+         </editorialDecl>
+      </encodingDesc>
+
+      <profileDesc>
+         <particDesc>
+            <listPerson>
+
+               <!-- INDIVIDUAL SPEAKING CHARACTERS -->
+
+               <person xml:id="dikaiopolis">
+                  <persName xml:lang="grc">Δικαιόπολις</persName>
+                  <persName xml:lang="en">Dikaiopolis</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </person>
+
+               <person xml:id="keryx">
+                  <persName xml:lang="grc">Κήρυξ</persName>
+                  <persName xml:lang="en">Herald</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </person>
+
+               <person xml:id="amphitheos">
+                  <persName xml:lang="grc">Ἀμφίθεος</persName>
+                  <persName xml:lang="en">Amphitheos</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </person>
+
+               <person xml:id="presbys">
+                  <persName xml:lang="grc">Πρέσβυς</persName>
+                  <persName xml:lang="en">Ambassador</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </person>
+
+               <person xml:id="pseudartabas">
+                  <persName xml:lang="grc">Ψευδαρτάβας</persName>
+                  <persName xml:lang="en">Pseudartabas</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="irrelevant"/>
+               </person>
+
+               <person xml:id="theoros">
+                  <persName xml:lang="grc">Θέωρος</persName>
+                  <persName xml:lang="en">Theoros</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </person>
+
+               <person xml:id="thygaterDikaiopolidos">
+                  <persName xml:lang="grc">Θυγάτηρ</persName>
+                  <persName xml:lang="en">Dik. Daughter</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="female"/>
+                  <trait type="age" key="child"/>
+                  <trait type="status" key="free"/>
+               </person>
+
+               <person xml:id="kephisophon">
+                  <persName xml:lang="grc">Κηφισοφῶν</persName>
+                  <persName xml:lang="en">Kephisophon</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </person>
+
+               <person xml:id="euripides">
+                  <persName xml:lang="grc">Εὐριπίδης</persName>
+                  <persName xml:lang="en">Euripides</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </person>
+
+               <person xml:id="lamachos">
+                  <persName xml:lang="grc">Λάμαχος</persName>
+                  <persName xml:lang="en">Lamachos</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </person>
+
+               <person xml:id="megareus">
+                  <persName xml:lang="grc">Μεγαρεύς</persName>
+                  <persName xml:lang="en">Megarian</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </person>
+
+               <person xml:id="koreMegareosA">
+                  <persName xml:lang="grc">Κόρη Μεγαρέως α΄</persName>
+                  <persName xml:lang="en">Meg. Daughter A</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="female"/>
+                  <trait type="age" key="child"/>
+                  <trait type="status" key="free"/>
+               </person>
+
+               <person xml:id="koreMegareosB">
+                  <persName xml:lang="grc">Κόρη Μεγαρέως β΄</persName>
+                  <persName xml:lang="en">Meg. Daughter B</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="female"/>
+                  <trait type="age" key="child"/>
+                  <trait type="status" key="free"/>
+               </person>
+
+               <person xml:id="sykophantes">
+                  <persName xml:lang="grc">Συκοφάντης</persName>
+                  <persName xml:lang="en">Informer</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </person>
+
+               <person xml:id="boiotos">
+                  <persName xml:lang="grc">Βοιωτός</persName>
+                  <persName xml:lang="en">Boeotian</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </person>
+
+               <person xml:id="nikarchos">
+                  <persName xml:lang="grc">Νίκαρχος</persName>
+                  <persName xml:lang="en">Nikarchos</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </person>
+
+               <person xml:id="oiketesLamachou">
+                  <persName xml:lang="grc">Οἰκέτης Λαμάχου</persName>
+                  <persName xml:lang="en">Lam. Slave</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="slave"/>
+               </person>
+
+               <person xml:id="derketes">
+                  <persName xml:lang="grc">Δερκέτης</persName>
+                  <persName xml:lang="en">Derketes</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </person>
+
+               <person xml:id="paranymphos">
+                  <persName xml:lang="grc">Παράνυμφος</persName>
+                  <persName xml:lang="en">Best Man</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </person>
+
+               <person xml:id="angelosA">
+                  <persName xml:lang="grc">Ἄγγελος α΄</persName>
+                  <persName xml:lang="en">Messenger A</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="irrelevant"/>
+               </person>
+
+               <person xml:id="angelosB">
+                  <persName xml:lang="grc">Ἄγγελος β΄</persName>
+                  <persName xml:lang="en">Messenger B</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="irrelevant"/>
+               </person>
+
+               <!-- COLLECTIVE SPEAKING CHARACTERS -->
+               <personGrp xml:id="choros">
+                  <persName xml:lang="grc">Χορός</persName>
+                  <persName xml:lang="en">Chorus</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </personGrp>
+
+               <personGrp xml:id="hemichorionA">
+                  <persName xml:lang="grc">Ἡμιχόριον α΄</persName>
+                  <persName xml:lang="en">Semichorus A</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </personGrp>
+
+               <personGrp xml:id="hemichorionB">
+                  <persName xml:lang="grc">Ἡμιχόριον β΄</persName>
+                  <persName xml:lang="en">Semichorus B</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </personGrp>
+
+               <!-- INDIVIDUAL MUTE CHARACTERS -->
+               <person xml:id="eunouchosA">
+                  <persName xml:lang="grc">Εὐνοῦχος α΄</persName>
+                  <persName xml:lang="en">Eunuch A</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="slave"/>
+               </person>
+
+               <person xml:id="eunouchosB">
+                  <persName xml:lang="grc">Εὐνοῦχος β΄</persName>
+                  <persName xml:lang="en">Eunuch B</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="slave"/>
+               </person>
+
+               <person xml:id="xanthias">
+                  <persName xml:lang="grc">Ξανθίας</persName>
+                  <persName xml:lang="en">Xanthias</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="slave"/>
+               </person>
+
+               <person xml:id="oiketesDikaiopolidosA">
+                  <persName xml:lang="grc">Οἰκέτης Δικαιοπόλιδος α΄</persName>
+                  <persName xml:lang="en">Dik. Slave A</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="slave"/>
+               </person>
+
+               <person xml:id="gyneDikaiopolidos">
+                  <persName xml:lang="grc">Γυνὴ Δικαιοπόλιδος</persName>
+                  <persName xml:lang="en">Dik. Wife</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="female"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </person>
+
+               <person xml:id="enchelys">
+                  <persName xml:lang="grc">Ἔγχελυς</persName>
+                  <persName xml:lang="en">Eel</persName>
+                  <trait type="nature" key="animal"/>
+                  <trait type="sex" key="female"/>
+                  <trait type="age" key="irrelevant"/>
+                  <trait type="status" key="irrelevant"/>
+               </person>
+
+               <person xml:id="ismenichos">
+                  <persName xml:lang="grc">Ἰσμήνιχος</persName>
+                  <persName xml:lang="en">Ismenichos</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="slave"/>
+               </person>
+
+               <person xml:id="nympheutria">
+                  <persName xml:lang="grc">Νυμφεύτρια</persName>
+                  <persName xml:lang="en">Bridesmaid</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="female"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="irrelevant"/>
+               </person>
+
+               <person xml:id="orchestrisA">
+                  <persName xml:lang="grc">Ὀρχηστρίς α΄</persName>
+                  <persName xml:lang="en">Dancing Girl A</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="female"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="slave"/>
+               </person>
+
+               <person xml:id="orchestrisB">
+                  <persName xml:lang="grc">Ὀρχηστρίς β΄</persName>
+                  <persName xml:lang="en">Dancing Girl B</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="female"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="slave"/>
+               </person>
+
+               <person xml:id="tis">
+                   <persName xml:lang="grc">τις</persName>
+                   <persName xml:lang="en">Unnamed servant/assistant</persName>
+                   <trait type="nature" key="human"/>
+                   <trait type="sex" key="irrelevant"/>
+                   <trait type="age" key="adult"/>
+                   <trait type="status" key="irrelevant"/>
+               </person>
+
+               <!-- COLLECTIVE MUTE CHARACTERS -->
+               <personGrp xml:id="prytaneis">
+                  <persName xml:lang="grc">Πρυτάνεις</persName>
+                  <persName xml:lang="en">Prytaneis</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </personGrp>
+
+               <personGrp xml:id="ekklesiastai">
+                  <persName xml:lang="grc">Ἐκκλησιασταί</persName>
+                  <persName xml:lang="en">Assemblymen</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </personGrp>
+
+               <personGrp xml:id="toxotai">
+                  <persName xml:lang="grc">Τοξόται</persName>
+                  <persName xml:lang="en">Archers</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="slave"/>
+               </personGrp>
+
+               <personGrp xml:id="presbeis">
+                  <persName xml:lang="grc">Πρέσβεις</persName>
+                  <persName xml:lang="en">Ambassadors</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </personGrp>
+
+               <personGrp xml:id="odomantonStratos">
+                  <persName xml:lang="grc">Ὀδομάντων στρατός</persName>
+                  <persName xml:lang="en">Odomantian Troop</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="irrelevant"/>
+               </personGrp>
+
+               <personGrp xml:id="paidiaDikaiopolidos">
+                  <persName xml:lang="grc">Παιδία Δικαιοπόλιδος</persName>
+                  <persName xml:lang="en">Dik. Children</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="irrelevant"/>
+                  <trait type="age" key="child"/>
+                  <trait type="status" key="free"/>
+               </personGrp>
+
+               <personGrp xml:id="lochitaiLamachou">
+                  <persName xml:lang="grc">Λοχῖται Λαμάχου</persName>
+                  <persName xml:lang="en">Lam. Soldiers</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="free"/>
+               </personGrp>
+
+               <personGrp xml:id="auletaiThebaioi">
+                  <persName xml:lang="grc">Αὐληταί Θηβαῖοι</persName>
+                  <persName xml:lang="en">Theban Pipers</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="irrelevant"/>
+               </personGrp>
+
+
+               <personGrp xml:id="oiketaiDikaiopolidos">
+                  <persName xml:lang="grc">Οἰκέται Δικαιοπόλιδος</persName>
+                  <persName xml:lang="en">Dik. Slaves</persName>
+                  <trait type="nature" key="human"/>
+                  <trait type="sex" key="male"/>
+                  <trait type="age" key="adult"/>
+                  <trait type="status" key="slave"/>
+               </personGrp>
+
+               <listRelation type="dramatic-structure">
+                  <relation name="partOf" active="#hemichorionA" passive="#choros">
+                     <desc>Semichor 1 is the one half of the chorus</desc>
+                  </relation>
+
+                  <relation name="partOf" active="#hemichorionB" passive="#choros">
+                     <desc>Semichor 2 is the one half of the chorus</desc>
+                  </relation>
+               </listRelation>
+            </listPerson>
+
+         </particDesc>
+               <textClass>
+            <catRef scheme="#genre" target="#comedy"/>
+         </textClass>
+      </profileDesc>
+   </teiHeader>
+   <standOff>
+      <!-- Controlled vocabulary for @ana on <move>. A move's @ana points to
+           these interpretations by id (e.g. ana="#voice-only #asleep"): one per
+           axis, an omitted axis takes its default. -->
+      <interpGrp xml:id="move-ana">
+         <desc>The five pairs fall into two directions. Location and concealment record
+            whether a character can be perceived by the others; condition — awake or
+            asleep, alive or dead, aware or unaware — records whether the character
+            perceives. <val>hidden</val> and <val>unaware</val> are therefore converse, not
+            equivalent: a concealed character carries <val>hidden</val> alone, and the
+            others are never marked <val>unaware</val> of them. Within the perception
+            direction the three pairs differ in scope: <val>asleep</val> and <val>dead</val>
+            are total and take no complement, where <val>unaware</val> is partial and names
+            its objects in <att>toWhom</att>.</desc>
+         <interp xml:id="stage">(default) present on stage.</interp>
+         <interp xml:id="voice-only">audibly present from off-stage.</interp>
+         <interp xml:id="unhidden">(default) visible to the other characters.</interp>
+         <interp xml:id="hidden">physically present on stage but visually concealed from the other
+            characters.</interp>
+         <interp xml:id="awake">(default) conscious; able to perceive.</interp>
+         <interp xml:id="asleep">unconscious; unable to perceive.</interp>
+         <interp xml:id="alive">(default) a living, animate body.</interp>
+         <interp xml:id="dead">deceased; a corpse, present and perceptible but not
+            perceiving.</interp>
+         <interp xml:id="aware">(default) perceptually engaged with the others on stage.</interp>
+         <interp xml:id="unaware">conscious but not perceptually engaged with specific others; the
+            others are named by the @toWhom attribute.</interp>
+      </interpGrp>
+      <interpGrp xml:id="move-crossing">
+         <desc>Both values start from an observation Dover makes about such figures: an
+            unnamed "someone" who fetches a prop, identity oscillating between a slave
+            and a stage attendant, is idle to pin down further. The schema expands it in
+            two directions: to events that matter for the plot, and to agents who are
+            identified and present elsewhere in the play. The criterion is the event
+            itself: a momentary appearance or sound, without verse, for which the text
+            marks neither an entrance nor a departure. A crossing never makes its agent
+            a node; whether the agent becomes one through its own entrance is a separate
+            matter. The <val>fetch-prop</val> figure never does. The women heard from the
+            Acropolis in Lysistrata (<val>signal-off</val>) do, when they enter as the
+            women's chorus.</desc>
+         <interp xml:id="fetch-prop">the figure answers a call from the stage and brings
+            a property on, the text supplying neither a name nor a departure.</interp>
+         <interp xml:id="signal-off">the figure is heard from off-stage and not seen;
+            no verse is assigned, the sound itself being the event.</interp>
+      </interpGrp>
+      <!-- Controlled vocabulary for @ana on <actor> in the castList: the
+           performer category that realises a role. singular vs collective is
+           no longer recorded here; it is inferred from <person> vs <personGrp>
+           in the header listPerson. "actor" is generic (individual actor not
+           distinguished); refine into #actor_1, #actor_2 etc. if doubling is
+           ever reconstructed. -->
+      <interpGrp xml:id="performers">
+         <interp xml:id="actor">Speaking role, realised by an actor (individual actor not
+            distinguished).</interp>
+         <interp xml:id="chorus">Realised by the chorus or a semichorus.</interp>
+         <interp xml:id="extra">Non-speaking supernumerary (κωφὸν πρόσωπον).</interp>
+         <interp xml:id="prop">Stage property: an inanimate object or fabricated contraption (e.g.
+            the statue of Peace; the flying dung-beetle), not a living creature and not enacted by a
+            performer.</interp>
+         <interp xml:id="animal">Realised by a (real) animal on stage. By convention, an entity that
+            appears as an animal and does nothing peculiar to humans (unlike the speaking,
+            city-founding birds of the chorus of Birds) is taken to be performed by an animal: e.g.
+            the eel, the sacrificial lamb, the donkey.</interp>
+      </interpGrp>
+      <!-- Secondary literature underlying interpretive annotation. Part of the
+           enhanced edition's apparatus, not source metadata: kept here in the
+           standOff beside the interp vocabularies, as one more target the body's
+           pointers resolve to. Each <bibl> carries an xml:id so an annotation can
+           attribute a debatable judgement to a scholar's view: point @resp
+           (responsible party) or, more strictly, @source (bibliographic support)
+           at it, e.g. <stage>
+ <move ... resp="#sommerstein1980"/>
+ </stage> or <actor ... source="#sommerstein1980">.
+           Add entries as needed; ids are local to this file. -->
+      <listBibl xml:id="annotationBibl" type="secondary">
+         <bibl xml:id="olson2002">
+            <author>S. Douglas Olson</author>
+            <title level="m">Aristophanes: Acharnians. Edited with Introduction and
+               Commentary</title>
+            <pubPlace>Oxford</pubPlace>
+            <publisher>Oxford University Press</publisher>
+            <date when="2002">2002</date>
+         </bibl>
+         <bibl xml:id="sommerstein1980">
+            <author>Alan H. Sommerstein</author>
+            <title level="m">Acharnians</title>
+            <title level="s">The Comedies of Aristophanes</title>
+            <biblScope unit="volume">1</biblScope>
+            <pubPlace>Warminster</pubPlace>
+            <publisher>Aris &amp; Phillips</publisher>
+            <date when="1980">1980</date>
+         </bibl>
+      </listBibl>
+   </standOff>
+   <text>
+      <front>
+         <castList>
+            <castItem xml:id="role_dikaiopolis" corresp="#dikaiopolis">
+               <role>Dikaiopolis</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_keryx" corresp="#keryx">
+               <role>Herald</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_amphitheos" corresp="#amphitheos">
+               <role>Amphitheos</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_presbys" corresp="#presbys">
+               <role>Ambassador</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_pseudartabas" corresp="#pseudartabas">
+               <role>Pseudartabas</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_theoros" corresp="#theoros">
+               <role>Theoros</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_thygaterDikaiopolidos" corresp="#thygaterDikaiopolidos">
+               <role>Dik. Daughter</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_kephisophon" corresp="#kephisophon">
+               <role>Kephisophon</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_euripides" corresp="#euripides">
+               <role>Euripides</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_lamachos" corresp="#lamachos">
+               <role>Lamachos</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_megareus" corresp="#megareus">
+               <role>Megarian</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_koreMegareosA" corresp="#koreMegareosA">
+               <role>Meg. Daughter A</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_koreMegareosB" corresp="#koreMegareosB">
+               <role>Meg. Daughter B</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_sykophantes" corresp="#sykophantes">
+               <role>Informer</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_boiotos" corresp="#boiotos">
+               <role>Boeotian</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_nikarchos" corresp="#nikarchos">
+               <role>Nikarchos</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_oiketesLamachou" corresp="#oiketesLamachou">
+               <role>Lam. Slave</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_derketes" corresp="#derketes">
+               <role>Derketes</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_paranymphos" corresp="#paranymphos">
+               <role>Best Man</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_angelosA" corresp="#angelosA">
+               <role>Messenger A</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_angelosB" corresp="#angelosB">
+               <role>Messenger B</role>
+               <actor ana="#actor"/>
+            </castItem>
+            <castItem xml:id="role_eunouchosA" corresp="#eunouchosA">
+               <role>Eunuch A</role>
+               <actor ana="#extra"/>
+            </castItem>
+            <castItem xml:id="role_eunouchosB" corresp="#eunouchosB">
+               <role>Eunuch B</role>
+               <actor ana="#extra"/>
+            </castItem>
+            <castItem xml:id="role_xanthias" corresp="#xanthias">
+               <role>Xanthias</role>
+               <actor ana="#extra"/>
+            </castItem>
+            <castItem xml:id="role_oiketesDikaiopolidosA" corresp="#oiketesDikaiopolidosA">
+               <role>Dik. Slave A</role>
+               <actor ana="#extra"/>
+            </castItem>
+            <castItem xml:id="role_oiketaiDikaiopolidos" corresp="#oiketaiDikaiopolidos">
+               <role>Dik. Slaves</role>
+               <actor ana="#extra"/>
+            </castItem>
+            <castItem xml:id="role_gyneDikaiopolidos" corresp="#gyneDikaiopolidos">
+               <role>Dik. Wife</role>
+               <actor ana="#extra"/>
+            </castItem>
+            <castItem xml:id="role_ismenichos" corresp="#ismenichos">
+               <role>Ismenichos</role>
+               <actor ana="#extra"/>
+            </castItem>
+            <castItem xml:id="role_nympheutria" corresp="#nympheutria">
+               <role>Bridesmaid</role>
+               <actor ana="#extra"/>
+            </castItem>
+            <castItem xml:id="role_orchestrisA" corresp="#orchestrisA">
+               <role>Dancing Girl A</role>
+               <actor ana="#extra"/>
+            </castItem>
+            <castItem xml:id="role_orchestrisB" corresp="#orchestrisB">
+               <role>Dancing Girl B</role>
+               <actor ana="#extra"/>
+            </castItem>
+            <castItem xml:id="role_enchelys" corresp="#enchelys">
+               <role>Eel</role>
+               <actor ana="#animal"/>
+            </castItem>
+            <castItem xml:id="role_prytaneis" corresp="#prytaneis">
+               <role>Prytaneis</role>
+               <actor ana="#extra"/>
+            </castItem>
+            <castItem xml:id="role_ekklesiastai" corresp="#ekklesiastai">
+               <role>Assemblymen</role>
+               <actor ana="#extra"/>
+            </castItem>
+            <castItem xml:id="role_toxotai" corresp="#toxotai">
+               <role>Archers</role>
+               <actor ana="#extra"/>
+            </castItem>
+            <castItem xml:id="role_presbeis" corresp="#presbeis">
+               <role>Ambassadors</role>
+               <actor ana="#extra"/>
+            </castItem>
+            <castItem xml:id="role_odomantonStratos" corresp="#odomantonStratos">
+               <role>Odomantian Troop</role>
+               <actor ana="#extra"/>
+            </castItem>
+            <castItem xml:id="role_paidiaDikaiopolidos" corresp="#paidiaDikaiopolidos">
+               <role>Dik. Children</role>
+               <actor ana="#extra"/>
+            </castItem>
+            <castItem xml:id="role_lochitaiLamachou" corresp="#lochitaiLamachou">
+               <role>Lam. Soldiers</role>
+               <actor ana="#extra"/>
+            </castItem>
+            <castItem xml:id="role_auletaiThebaioi" corresp="#auletaiThebaioi">
+               <role>Theban Pipers</role>
+               <actor ana="#extra"/>
+            </castItem>
+            <castItem xml:id="role_choros" corresp="#choros">
+               <role>Chorus</role>
+               <actor ana="#chorus"/>
+            </castItem>
+            <castItem xml:id="role_hemichorionA" corresp="#hemichorionA">
+               <role>Semichorus A</role>
+               <actor ana="#chorus"/>
+            </castItem>
+            <castItem xml:id="role_hemichorionB" corresp="#hemichorionB">
+               <role>Semichorus B</role>
+               <actor ana="#chorus"/>
+            </castItem>
+            <castItem xml:id="role_tis" corresp="#tis">
+               <role>Unnamed servant/assistant</role>
+               <actor ana="#extra"/>
+            </castItem>
+         </castList>
+      </front>
+      <body>
+         <div type="play">
+            <milestone unit="large-seq" xml:id="L01"/>
+            <milestone unit="middle-seq" xml:id="s001"/>
+            <!-- First middle-seq. No entrance or exit occurs within it. -->
+            <stage>
+               <move type="onStage"/>
+            </stage>
+            <stage>
+               <move type="onStage" who="#dikaiopolis"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="1">ὅσα δὴ δέδηγμαι τὴν ἐμαυτοῦ καρδίαν,</l>
+               <l n="2">ἥσθην δὲ βαιά, πάνυ δὲ βαιά, τέτταρα·</l>
+               <l n="3">ἃ δʼ ὠδυνήθην, ψαμμακοσιογάργαρα.</l>
+               <l n="4">φέρʼ ἴδω, τί δʼ ἥσθην ἄξιον χαιρηδόνος;</l>
+               <l n="5">ἐγᾦδʼ ἐφʼ ᾧ γε τὸ κέαρ ηὐφράνθην ἰδών,</l>
+               <l n="6">τοῖς πέντε ταλάντοις οἷς Κλέων ἐξήμεσεν.</l>
+               <l n="7">ταῦθʼ ὡς ἐγανώθην, καὶ φιλῶ τοὺς ἱππέας</l>
+               <l n="8">διὰ τοῦτο τοὔργον· ἄξιον γὰρ Ἑλλάδι.</l>
+               <l n="9">ἀλλʼ ὠδυνήθην ἕτερον αὖ τραγῳδικόν,</l>
+               <l n="10">ὅτε δὴ ʼκεχήνη προσδοκῶν τὸν Αἰσχύλον,</l>
+               <l n="11">ὁ δʼ ἀνεῖπεν, εἴσαγʼ ὦ Θέογνι τὸν χορόν.</l>
+               <l n="12">πῶς τοῦτʼ ἔσεισέ μου δοκεῖς τὴν καρδίαν;</l>
+               <l n="13">ἀλλʼ ἕτερον ἥσθην, ἡνίκʼ ἐπὶ Μόσχῳ ποτὲ</l>
+               <l n="14">Δεξίθεος εἰσῆλθʼ ᾀσόμενος Βοιώτιον.</l>
+               <l n="15">τῆτες δʼ ἀπέθανον καὶ διεστράφην ἰδών,</l>
+               <l n="16">ὅτε δὴ παρέκυψε Χαῖρις ἐπὶ τὸν ὄρθιον.</l>
+               <l n="17">ἀλλʼ οὐδεπώποτʼ ἐξ ὅτου ʼγὼ ῥύπτομαι</l>
+               <l n="18">οὕτως ἐδήχθην ὑπὸ κονίας τὰς ὀφρῦς</l>
+               <l n="19">ὡς νῦν, ὁπότʼ οὔσης κυρίας ἐκκλησίας</l>
+               <l n="20">ἑωθινῆς ἔρημος ἡ πνὺξ αὑτηί,</l>
+               <l n="21">οἱ δʼ ἐν ἀγορᾷ λαλοῦσι κἄνω καὶ κάτω</l>
+               <l n="22">τὸ σχοινίον φεύγουσι τὸ μεμιλτωμένον.</l>
+               <l n="23">οὐδʼ οἱ πρυτάνεις ἥκουσιν, ἀλλʼ ἀωρίαν</l>
+               <l n="24">ἥκοντες, εἶτα δʼ ὠστιοῦνται πῶς δοκεῖς</l>
+               <l n="25">ἐλθόντες ἀλλήλοισι περὶ πρώτου ξύλου,</l>
+               <l n="26">ἁθρόοι καταρρέοντες· εἰρήνη δʼ ὅπως</l>
+               <l n="27">ἔσται προτιμῶσʼ οὐδέν· ὦ πόλις πόλις.</l>
+               <l n="28">ἐγὼ δʼ ἀεὶ πρώτιστος εἰς ἐκκλησίαν</l>
+               <l n="29">νοστῶν κάθημαι· κᾆτʼ ἐπειδὰν ὦ μόνος,</l>
+               <l n="30">στένω κέχηνα σκορδινῶμαι πέρδομαι,</l>
+               <l n="31">ἀπορῶ γράφω παρατίλλομαι λογίζομαι,</l>
+               <l n="32">ἀποβλέπων ἐς τὸν ἀγρὸν εἰρήνης ἐρῶν,</l>
+               <l n="33">στυγῶν μὲν ἄστυ τὸν δʼ ἐμὸν δῆμον ποθῶν,</l>
+               <l n="34">ὃς οὐδεπώποτʼ εἶπεν, ἄνθρακας πρίω,</l>
+               <l n="35"> οὐκ ὄξος οὐκ ἔλαιον, οὐδʼ ᾔδει <q>πρίω</q>, </l>
+               <l n="36">ἀλλʼ αὐτὸς ἔφερε πάντα χὠ πρίων ἀπῆν.</l>
+               <l n="37">νῦν οὖν ἀτεχνῶς ἥκω παρεσκευασμένος</l>
+               <l n="38">βοᾶν ὑποκρούειν λοιδορεῖν τοὺς ῥήτορας,</l>
+               <l n="39">ἐάν τις ἄλλο πλὴν περὶ εἰρήνης λέγῃ.</l>
+            </sp>
+            
+            <milestone unit="middle-seq" xml:id="s002"/>
+            <!-- The entrance of the Herald with the prytaneis and the assemblymen
+                 triggers the transition from s001 to s002. The entrance of
+                 Amphitheos (45) and his expulsion by the archers (56) do not trigger
+                 new segments. -->
+            
+            <stage>
+               <move type="entrance" who="#keryx #prytaneis #ekklesiastai #toxotai"/>
+            </stage>
+            
+            <sp who="#dikaiopolis">
+               <l n="40">ἀλλʼ οἱ πρυτάνεις γὰρ οὑτοιὶ μεσημβρινοί.</l>
+               <l n="41">οὐκ ἠγόρευον; τοῦτʼ ἐκεῖνʼ οὑγὼ ʼλεγον·</l>
+               <l n="42">ἐς τὴν προεδρίαν πᾶς ἀνὴρ ὠστίζεται.</l>
+            </sp>
+            <sp who="#keryx">
+               <l n="43">πάριτʼ ἐς τὸ πρόσθεν,</l>
+               <l n="44">πάριθʼ, ὡς ἂν ἐντὸς ἦτε τοῦ καθάρματος.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#amphitheos"/>
+            </stage>
+
+            <sp who="#amphitheos">
+               <l n="45" part="I">ἤδη τις εἶπε;</l>
+            </sp>
+            <sp who="#keryx">
+               <l n="45" part="F">τίς ἀγορεύειν βούλεται;</l>
+            </sp>
+            <sp who="#amphitheos">
+               <l n="46" part="I">ἐγώ.</l>
+            </sp>
+            <sp who="#keryx">
+               <l n="46" part="M">τίς ὤν;</l>
+            </sp>
+            <sp who="#amphitheos">
+               <l n="46" part="M">Ἀμφίθεος.</l>
+            </sp>
+            <sp who="#keryx">
+               <l n="46" part="M">οὐκ ἄνθρωπος;</l>
+            </sp>
+            <sp who="#amphitheos">
+               <l n="46" part="F">οὔ,</l>
+               <l n="47">ἀλλʼ ἀθάνατος. ὁ γὰρ Ἀμφίθεος Δήμητρος ἦν</l>
+               <l n="48">καὶ Τριπτολέμου· τούτου δὲ Κελεὸς γίγνεται·</l>
+               <l n="49">γαμεῖ δὲ Κελεὸς Φαιναρέτην τήθην ἐμήν,</l>
+               <l n="50">ἐξ ἧς Λυκῖνος ἐγένεʼ· ἐκ τούτου δʼ ἐγὼ</l>
+               <l n="51">ἀθάνατός εἰμʼ· ἐμοὶ δʼ ἐπέτρεψαν οἱ θεοὶ</l>
+               <l n="52">σπονδὰς ποιεῖσθαι πρὸς Λακεδαιμονίους μόνῳ.</l>
+               <l n="53">ἀλλʼ ἀθάνατος ὢν ὦνδρες ἐφόδιʼ οὐκ ἔχω·</l>
+               <l n="54" part="I">οὐ γὰρ διδόασιν οἱ πρυτάνεις.</l>
+            </sp>
+            <sp who="#keryx">
+               <l n="54" part="F">οἱ τοξόται.</l>
+            </sp>
+            <sp who="#amphitheos">
+               <l n="55">ὦ Τριπτόλεμε καὶ Κελεὲ περιόψεσθέ με;</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#amphitheos #toxotai"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="56">ὦνδρες πρυτάνεις ἀδικεῖτε τὴν ἐκκλησίαν</l>
+               <l n="57">τὸν ἄνδρʼ ἀπάγοντες, ὅστις ἡμῖν ἤθελε</l>
+               <l n="58">σπονδὰς ποιεῖσθαι καὶ κρεμάσαι τὰς ἀσπίδας.</l>
+            </sp>
+            <sp who="#keryx">
+               <l n="59" part="I">κάθησο, σῖγα.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="59" part="F">μὰ τὸν Ἀπόλλω ʼγὼ μὲν οὔ,</l>
+               <l n="60">ἢν μὴ περὶ εἰρήνης γε πρυτανεύσητέ μοι.</l>
+            </sp>
+            
+            
+            <milestone unit="middle-seq" xml:id="s003"/>
+            <!-- The entrance of the ambassadors from the King triggers the
+                 transition from s002 to s003; the boundary is placed before the
+                 Herald's proclamation of them, which motivates the entrance
+                 immediately (65). -->
+            <sp who="#keryx">
+               <l n="61">οἱ πρέσβεις οἱ παρὰ βασιλέως.</l>
+            </sp>
+
+            <sp who="#dikaiopolis">
+               <l n="62">ποίου βασιλέως; ἄχθομαι ʼγὼ πρέσβεσιν</l>
+               <l n="63">καὶ τοῖς ταὧσι τοῖς τʼ ἀλαζονεύμασιν.</l>
+            </sp>
+            <sp who="#keryx">
+               <l n="64" part="I">σίγα.</l>
+            </sp>
+            
+            <stage>
+               <move type="entrance" who="#presbeis #presbys"/>
+            </stage>
+            
+            <sp who="#dikaiopolis">
+               <l n="64" part="F">βαβαιάξ. ὦκβάτανα τοῦ σχήματος.</l>
+            </sp>
+            <sp who="#presbys">
+               <l n="65">ἐπέμψαθʼ ἡμᾶς ὡς βασιλέα τὸν μέγαν</l>
+               <l n="66">μισθὸν φέροντας δύο δραχμὰς τῆς ἡμέρας</l>
+               <l n="67" part="I">ἐπʼ Εὐθυμένους ἄρχοντος.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="67" part="F">οἴμοι τῶν δραχμῶν.</l>
+            </sp>
+            <sp who="#presbys">
+               <l n="68">καὶ δῆτʼ ἐτρυχόμεσθα διὰ Καϋστρίων</l>
+               <l n="69">πεδίων ὁδοιπλανοῦντες ἐσκηνημένοι,</l>
+               <l n="70">ἐφʼ ἁρμαμαξῶν μαλθακῶς κατακείμενοι,</l>
+               <l n="71" part="I">ἀπολλύμενοι.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="71" part="F">σφόδρα γὰρ ἐσῳζόμην ἐγὼ</l>
+               <l n="72">παρὰ τὴν ἔπαλξιν ἐν φορυτῷ κατακείμενος.</l>
+            </sp>
+            <sp who="#presbys">
+               <l n="73">ξενιζόμενοι δὲ πρὸς βίαν ἐπίνομεν</l>
+               <l n="74">ἐξ ὑαλίνων ἐκπωμάτων καὶ χρυσίδων</l>
+               <l n="75" part="I">ἄκρατον οἶνον ἡδύν.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="75" part="F">ὦ Κραναὰ πόλις</l>
+               <l n="76">ἆρʼ αἰσθάνει τὸν κατάγελων τῶν πρέσβεων;</l>
+            </sp>
+            <sp who="#presbys">
+               <l n="77">οἱ βάρβαροι γὰρ ἄνδρας ἡγοῦνται μόνους</l>
+               <l n="78">τοὺς πλεῖστα δυναμένους καταφαγεῖν καὶ πιεῖν.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="79">ἡμεῖς δὲ λαικαστάς τε καὶ καταπύγονας.</l>
+            </sp>
+            <sp who="#presbys">
+               <l n="80">ἔτει τετάρτῳ δʼ ἐς τὰ βασίλειʼ ἤλθομεν·</l>
+               <l n="81">ἀλλʼ εἰς ἀπόπατον ᾤχετο στρατιὰν λαβών,</l>
+               <l n="82">κἄχεζεν ὀκτὼ μῆνας ἐπὶ χρυσῶν ὀρῶν.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="83">πόσου δὲ τὸν πρωκτὸν χρόνου ξυνήγαγεν;</l>
+            </sp>
+            <sp who="#presbys">
+               <l n="84">τῇ πανσελήνῳ· κᾆτʼ ἀπῆλθεν οἴκαδε.</l>
+               <l n="85">εἶτʼ ἐξένιζε· παρετίθει δʼ ἡμῖν ὅλους</l>
+               <l n="86" part="I">ἐκ κριβάνου βοῦς.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="86" part="F">καὶ τίς εἶδε πώποτε</l>
+               <l n="87">βοῦς κριβανίτας; τῶν ἀλαζονευμάτων.</l>
+            </sp>
+            <sp who="#presbys">
+               <l n="88">καὶ ναὶ μὰ Δίʼ ὄρνιν τριπλάσιον Κλεωνύμου</l>
+               <l n="89">παρέθηκεν ἡμῖν· ὄνομα δʼ ἦν αὐτῷ φέναξ.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="90">ταῦτʼ ἄρ ἐφενάκιζες σὺ δύο δραχμὰς φέρων.</l>
+            </sp>
+            <milestone unit="middle-seq" xml:id="s004"/>
+            <!-- The entrance of Pseudartabas triggers the transition from s003 to
+                 s004; the boundary is placed before the ambassador's announcement of
+                 the King's Eye, which motivates the entrance immediately (95). The
+                 dismissal of the ambassadors (111) does not trigger a new segment. -->
+            <sp who="#presbys">
+               <l n="91">καὶ νῦν ἄγοντες ἥκομεν Ψευδαρτάβαν,</l>
+               <l n="92" part="I">τὸν βασιλέως ὀφθαλμόν.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="92" part="F">ἐκκόψειέ γε</l>
+               <l n="93">κόραξ πατάξας, τόν τε σὸν τοῦ πρέσβεως.</l>
+            </sp>
+            <sp who="#keryx">
+               <l n="94" part="I">ὁ βασιλέως ὀφθαλμός.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#pseudartabas #eunouchosA #eunouchosB"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="94" part="F">ὦναξ Ἡράκλεις.</l>
+               <l n="95">πρὸς τῶν θεῶν ἄνθρωπε ναύφαρκτον βλέπεις;</l>
+               <l n="96">ἢ περὶ ἄκραν κάμπτων νεώσοικον σκοπεῖς;</l>
+               <l n="97">ἄσκωμʼ ἔχεις που περὶ τὸν ὀφθαλμὸν κάτω.</l>
+            </sp>
+            <sp who="#presbys">
+               <l n="98">ἄγε δὴ σὺ βασιλεὺς ἅττα σʼ ἀπέπεμψεν φράσον</l>
+               <l n="99">λέξοντʼ Ἀθηναίοισιν ὦ Ψευδαρτάβα.</l>
+            </sp>
+            <sp who="#pseudartabas">
+               <l n="100">ἰαρταμὰν ἐξάρξαν ἀπισσόνα σάτρα.</l>
+            </sp>
+            <sp who="#presbys">
+               <l n="101" part="I">ξυνήκαθʼ ὃ λέγει;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="101" part="F">μὰ τὸν Ἀπόλλω ʼγὼ μὲν οὔ.</l>
+            </sp>
+            <sp who="#presbys">
+               <l n="102">πέμψειν βασιλέα φησὶν ὑμῖν χρυσίον.</l>
+               <l n="103">λέγε δὴ σὺ μεῖζον καὶ σαφῶς τὸ χρυσίον.</l>
+            </sp>
+            <sp who="#pseudartabas">
+               <l n="104">οὐ λῆψι χρῦσο χαυνόπρωκτʼ Ἰαοναῦ.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="105" part="I">οἴμοι κακοδαίμων ὡς σαφῶς.</l>
+            </sp>
+            <sp who="#presbys">
+               <l n="105" part="F">τί δʼ αὖ λέγει;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="106">ὅ τι; χαυνοπρώκτους τοὺς Ἰάονας λέγει,</l>
+               <l n="107">εἰ προσδοκῶσι χρυσίον ἐκ τῶν βαρβάρων.</l>
+            </sp>
+            <sp who="#presbys">
+               <l n="108">οὔκ, ἀλλʼ ἀχάνας ὅδε γε χρυσίου λέγει.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="109">ποίας ἀχάνας; σὺ μὲν ἀλαζὼν εἶ μέγας.</l>
+               <l n="110">ἀλλʼ ἄπιθʼ· ἐγὼ δὲ βασανιῶ τοῦτον μόνος.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#presbys #presbeis "/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="111">ἄγε δὴ σὺ φράσον ἐμοὶ σαφῶς πρὸς τουτονί,</l>
+               <l n="112">ἵνα μή σε βάψω βάμμα Σαρδιανικόν·</l>
+               <l n="113"> βασιλεὺς ὁ μέγας ἡμῖν ἀποπέμψει χρυσίον; <note type="stage"
+                     >(ἀνανεύει.)</note>
+               </l>
+               <l n="114"> ἄλλως ἄρʼ ἐξαπατώμεθʼ ὑπὸ τῶν πρέσβεων; <note type="stage"
+                     >(ἐπινεύει.)</note>
+               </l>
+               <l n="115">Ἑλληνικόν γʼ ἐπένευσαν ἅνδρες οὑτοιί,</l>
+               <l n="116">κοὐκ ἔσθʼ ὅπως οὐκ εἰσὶν ἐνθένδʼ αὐτόθεν.</l>
+               <l n="117">καὶ τοῖν μὲν εὐνούχοιν τὸν ἕτερον τουτονὶ</l>
+               <l n="118">ἐγᾦδʼ ὅς ἐστι, Κλεισθένης ὁ Σιβυρτίου.</l>
+               <l n="119">ὦ θερμόβουλον πρωκτὸν ἐξυρημένε,</l>
+               <l n="120">τοιόνδε γʼ ὦ πίθηκε τὸν πώγωνʼ ἔχων</l>
+               <l n="121">εὐνοῦχος ἡμῖν ἦλθες ἐσκευασμένος;</l>
+               <l n="122">ὁδὶ δὲ τίς ποτʼ ἐστίν; οὐ δήπου Στράτων;</l>
+            </sp>
+            <sp who="#keryx">
+               <l n="123">σίγα, κάθιζε.</l>
+               <l n="124">τὸν βασιλέως ὀφθαλμὸν ἡ βουλὴ καλεῖ</l>
+               <l n="125" part="I">ἐς τὸ πρυτανεῖον.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#pseudartabas #eunouchosA #eunouchosB"/>
+            </stage>
+            <milestone unit="middle-seq" xml:id="s005"/>
+            <!-- The removal of Pseudartabas to the prytaneion triggers the
+                 transition from s004 to s005; the boundary is placed after his exit,
+                 inside l. 125. The entrance of Amphitheos (130) and his exit on the commission (133) do not trigger new segments. -->
+            <sp who="#dikaiopolis">
+               <l n="125" part="F">ταῦτα δῆτʼ οὐχ ἀγχόνη;</l>
+               <l n="126">κἄπειτʼ ἐγὼ δῆτʼ ἐνθαδὶ στραγγεύομαι;</l>
+               <l n="127">τοὺς δὲ ξενίζειν οὐδέποτέ γʼ ἴσχει θύρα.</l>
+               <l n="128">ἀλλʼ ἐργάσομαί τι δεινὸν ἔργον καὶ μέγα.</l>
+               <l n="129" part="I">ἀλλʼ Ἀμφίθεός μοι ποῦ ʼστιν;</l>
+            </sp>
+            
+            <stage>
+               <move type="entrance" who="#amphitheos"/>
+            </stage>
+
+            <sp who="#amphitheos">
+               <l n="129" part="F">οὑτοσὶ πάρα.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="130">ἐμοὶ σὺ ταυτασὶ λαβὼν ὀκτὼ δραχμὰς</l>
+               <l n="131">σπονδὰς ποίησαι πρὸς Λακεδαιμονίους μόνῳ</l>
+               <l n="132">καὶ τοῖσι παιδίοισι καὶ τῇ πλάτιδι·</l>
+            </sp>
+            
+            <stage>
+               <move type="exit" who="#amphitheos"/>
+            </stage>
+            
+            <sp who="#dikaiopolis">
+               <l n="133">ὑμεῖς δὲ πρεσβεύεσθε καὶ κεχήνετε.</l>
+            </sp>
+            
+            <milestone unit="middle-seq" xml:id="s006"/>
+            <!-- The entrance of Theoros triggers the transition from s005 to s006;
+                 the boundary is placed before the Herald's proclamation of him,
+                 which motivates the entrance immediately (135). -->
+            
+            <sp who="#keryx">
+               <l n="134" part="I">προσίτω Θέωρος ὁ παρὰ Σιτάλκους.</l>
+            </sp>
+            
+            <stage>
+               <move type="entrance" who="#theoros"/>
+            </stage>
+            
+            <sp who="#theoros">
+               <l n="134" part="F">ὁδί.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="135">ἕτερος ἀλαζὼν οὗτος ἐσκηρύττεται.</l>
+            </sp>
+            <sp who="#theoros">
+               <l n="136">χρόνον μὲν οὐκ ἂν ἦμεν ἐν Θρᾴκῃ πολύν—</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="137">μὰ Δίʼ οὐκ ἄν, εἰ μισθόν γε μὴ ʼφερες πολύν.</l>
+            </sp>
+            <sp who="#theoros">
+               <l n="138">εἰ μὴ κατένειψε χιόνι τὴν Θρᾴκην ὅλην</l>
+               <l n="139">καὶ τοὺς ποταμοὺς ἔπηξʼ, ὑπʼ αὐτὸν τὸν χρόνον,</l>
+               <l n="140">ὅτʼ ἐνθαδὶ Θέογνις ἠγωνίζετο.</l>
+               <l n="141">τοῦτον μετὰ Σιτάλκους ἔπινον τὸν χρόνον·</l>
+               <l n="142">καὶ δῆτα φιλαθήναιος ἦν ὑπερφυῶς,</l>
+               <l n="143">ὑμῶν τʼ ἐραστὴς ἦν ἀληθὴς ὥστε καὶ</l>
+               <l n="144">ἐν τοῖσι τοίχοις ἔγραφʼ, Ἀθηναῖοι καλοί.</l>
+               <l n="145">ὁ δʼ υἱός, ὃν Ἀθηναῖον ἐπεποιήμεθα,</l>
+               <l n="146">ἤρα φαγεῖν ἀλλᾶντας ἐξ Ἀπατουρίων,</l>
+               <l n="147">καὶ τὸν πατέρʼ ἠντεβόλει βοηθεῖν τῇ πάτρᾳ·</l>
+               <l n="148">ὁ δʼ ὤμοσε σπένδων βοηθήσειν ἔχων</l>
+               <l n="149">στρατιὰν τοσαύτην ὥστʼ Ἀθηναίους ἐρεῖν,</l>
+               <l n="150">ὅσον τὸ χρῆμα παρνόπων προσέρχεται.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="151">κάκιστʼ ἀπολοίμην, εἴ τι τούτων πείθομαι</l>
+               <l n="152">ὧν εἶπας ἐνταυθοῖ σὺ πλὴν τῶν παρνόπων.</l>
+            </sp>
+            <sp who="#theoros">
+               <l n="153">καὶ νῦν ὅπερ μαχιμώτατον Θρᾳκῶν ἔθνος</l>
+               <l n="154" part="I">ἔπεμψεν ὑμῖν.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="154" part="F">τοῦτο μέν γʼ ἤδη σαφές.</l>
+            </sp>
+            <milestone unit="middle-seq" xml:id="s007"/>
+            <!-- The entrance of the Odomantians triggers the transition from s006 to
+                 s007; the boundary is placed before the Herald's summons of the
+                 Thracians, which motivates the entrance immediately (156). The segment ends with the dissolution of the assembly (174), followed by a
+                 single verse from Dikaiopolis, left alone. -->
+            <sp who="#keryx">
+               <l n="155">οἱ Θρᾷκες ἴτε δεῦρʼ, οὓς Θέωρος ἤγαγεν.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#odomantonStratos"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="156" part="I">τουτὶ τί ἐστι τὸ κακόν;</l>
+            </sp>
+            <sp who="#theoros">
+               <l n="156" part="F">Ὀδομάντων στρατός.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="157">ποίων Ὀδομάντων; εἰπέ μοι τουτὶ τί ἦν;</l>
+               <l n="158">τίς τῶν Ὀδομάντων τὸ πέος ἀποτεθρίακεν;</l>
+            </sp>
+            <sp who="#theoros">
+               <l n="159">τούτοις ἐάν τις δύο δραχμὰς μισθὸν διδῷ,</l>
+               <l n="160">καταπελτάσονται τὴν Βοιωτίαν ὅλην.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="161">τοισδὶ δύο δραχμὰς τοῖς ἀπεψωλημένοις;</l>
+               <l n="162">ὑποστένοι μέντἂν ὁ θρανίτης λεὼς</l>
+               <l n="163">ὁ σωσίπολις. οἴμοι τάλας ἀπόλλυμαι,</l>
+               <l n="164">ὑπὸ τῶν Ὀδομάντων τὰ σκόροδα πορθούμενος.</l>
+               <l n="165" part="I">οὐ καταβαλεῖτε τὰ σκόροδʼ;</l>
+            </sp>
+            <sp who="#theoros">
+               <l n="165" part="F">ὦ μόχθηρε σὺ</l>
+               <l n="166">οὐ μὴ πρόσει τούτοισιν ἐσκοροδισμένοις.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="167">ταυτὶ περιείδεθʼ οἱ πρυτάνεις πάσχοντά με</l>
+               <l n="168">ἐν τῇ πατρίδι καὶ ταῦθʼ ὑπʼ ἀνδρῶν βαρβάρων;</l>
+               <l n="169">ἀλλʼ ἀπαγορεύω μὴ ποιεῖν ἐκκλησίαν</l>
+               <l n="170">τοῖς Θρᾳξὶ περὶ μισθοῦ· λέγω δʼ ὑμῖν ὅτι</l>
+               <l n="171">διοσημία ʼστὶ καὶ ῥανὶς βέβληκέ με.</l>
+            </sp>
+            <sp who="#keryx">
+               <l n="172">τοὺς Θρᾷκας ἀπιέναι, παρεῖναι δʼ εἰς ἔνην.</l>
+               <l n="173">οἱ γὰρ πρυτάνεις λύουσι τὴν ἐκκλησίαν.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#prytaneis #ekklesiastai #keryx #theoros #odomantonStratos"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="174">οἴμοι τάλας μυττωτὸν ὅσον ἀπώλεσα.</l>
+            </sp>
+            <milestone unit="middle-seq" xml:id="s008"/>
+            <!-- The return of Amphitheos with the truces triggers the transition
+                 from s007 to s008; the boundary is placed before his entrance. -->
+            <stage>
+               <move type="entrance" who="#amphitheos"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="175">ἀλλʼ ἐκ Λακεδαίμονος γὰρ Ἀμφίθεος ὁδί.</l>
+               <l n="176" part="I">χαῖρʼ Ἀμφίθεε.</l>
+            </sp>
+            <sp who="#amphitheos">
+               <l n="176" part="F">μήπω γε πρίν γʼ ἂν στῶ τρέχων·</l>
+               <l n="177">δεῖ γάρ με φεύγοντʼ ἐκφυγεῖν Ἀχαρνέας.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="178" part="I">τί δʼ ἔστʼ;</l>
+            </sp>
+            <sp who="#amphitheos">
+               <l n="178" part="F">ἐγὼ μὲν δεῦρό σοι σπονδὰς φέρων</l>
+               <l n="179">ἔσπευδον· οἱ δʼ ὤσφροντο πρεσβῦταί τινες</l>
+               <l n="180">Ἀχαρνικοί, στιπτοὶ γέροντες πρίνινοι</l>
+               <l n="181">ἀτεράμονες Μαραθωνομάχαι σφενδάμνινοι.</l>
+               <l n="182">ἔπειτʼ ἀνέκραγον πάντες, ὦ μιαρώτατε</l>
+               <l n="183">σπονδὰς φέρεις τῶν ἀμπέλων τετμημένων;</l>
+               <l n="184">κἀς τοὺς τρίβωνας ξυνελέγοντο τῶν λίθων·</l>
+               <l n="185">ἐγὼ δʼ ἔφευγον· οἱ δʼ ἐδίωκον κἀβόων.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="186">οἱ δʼ οὖν βοώντων· ἀλλὰ τὰς σπονδὰς φέρεις;</l>
+            </sp>
+            <sp who="#amphitheos">
+               <l n="187">ἔγωγέ φημι, τρία γε ταυτὶ γεύματα.</l>
+               <l n="188">αὗται μέν εἰσι πεντέτεις. γεῦσαι λαβών.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="189" part="I">αἰβοῖ.</l>
+            </sp>
+            <sp who="#amphitheos">
+               <l n="189" part="M">τί ἔστιν;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="189" part="F">οὐκ ἀρέσκουσίν μʼ ὅτι</l>
+               <l n="190">ὄζουσι πίττης καὶ παρασκευῆς νεῶν.</l>
+            </sp>
+            <sp who="#amphitheos">
+               <l n="191">σὺ δʼ ἀλλὰ τασδὶ τὰς δεκέτεις γεῦσαι λαβών.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="192">ὄζουσι χαὖται πρέσβεων ἐς τὰς πόλεις</l>
+               <l n="193">ὀξύτατον ὥσπερ διατριβῆς τῶν ξυμμάχων.</l>
+            </sp>
+            <sp who="#amphitheos">
+               <l n="194">ἀλλʼ αὑταιὶ σπονδαὶ τριακοντούτιδες</l>
+               <l n="195" part="I">κατὰ γῆν τε καὶ θάλατταν.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="195" part="F">ὦ Διονύσια,</l>
+               <l n="196">αὗται μὲν ὄζουσʼ ἀμβροσίας καὶ νέκταρος</l>
+               <l n="197">καὶ μὴ ʼπιτηρεῖν σιτίʼ ἡμερῶν τριῶν,</l>
+               <l n="198">κἀν τῷ στόματι λέγουσι, βαῖνʼ ὅπῃ θέλεις.</l>
+               <l n="199">ταύτας δέχομαι καὶ σπένδομαι κἀκπίομαι,</l>
+               <l n="200">χαίρειν κελεύων πολλὰ τοὺς Ἀχαρνέας.</l>
+               <l n="201">ἐγὼ δὲ πολέμου καὶ κακῶν ἀπαλλαγεὶς</l>
+               <l n="202">ἄξω τὰ κατʼ ἀγροὺς εἰσιὼν Διονύσια.</l>
+            </sp>
+            <sp who="#amphitheos">
+               <l n="203">ἐγὼ δὲ φευξοῦμαί γε τοὺς Ἀχαρνέας.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#dikaiopolis #amphitheos"/>
+               <milestone unit="large-seq" type="parodos" xml:id="L02"/>
+               <milestone unit="middle-seq" xml:id="s009"/>
+               <!-- The entrance of the chorus triggers the transition from s008 to
+                    s009, coinciding with the large-seq start boundary L02 (parodos).
+                    Dikaiopolis' voice-only intervention (237) does not trigger a new
+                    segment. The segment closes with the chorus concealing itself to
+                    ambush him. -->
+               <move type="entrance" who="#choros"/>
+            </stage>
+            <sp who="#choros">
+               <l n="204">τῇδε πᾶς ἕπου δίωκε καὶ τὸν ἄνδρα πυνθάνου</l>
+               <l n="205">τῶν ὁδοιπόρων ἁπάντων· τῇ πόλει γὰρ ἄξιον</l>
+               <l n="206" part="I">ξυλλαβεῖν τὸν ἄνδρα τοῦτον.</l>
+               <l n="206" part="F">ἀλλά μοι μηνύσατε,</l>
+               <l n="207"> εἴ τις οἶδʼ ὅποι τέτραπται γῆς ὁ τὰς σπονδὰς φέρων. </l>
+               <l n="208">ἐκπέφευγʼ, οἴχεται φροῦδος. οἴμοι τάλας</l>
+               <l n="210">τῶν ἐτῶν τῶν ἐμῶν·</l>
+               <l n="211"> οὐκ ἂν ἐπʼ ἐμῆς γε νεότητος, ὅτʼ ἐγὼ φέρων ἀνθράκων φορτίον </l>
+               <l n="215">ἠκολούθουν Φαΰλλῳ τρέχων, ὧδε φαύλως ἂν ὁ</l>
+               <l n="216">σπονδοφόρος οὗτος ὑπʼ ἐμοῦ τότε διωκόμενος</l>
+               <l n="217">ἐξέφυγεν οὐδʼ ἂν ἐλαφρῶς ἂν ἀπεπλίξατο.</l>
+               <l n="219">νῦν δʼ ἐπειδὴ στερρὸν ἤδη τοὐμὸν ἀντικνήμιον,</l>
+               <l n="220">καὶ παλαιῷ Λακρατείδῃ τὸ σκέλος βαρύνεται,</l>
+               <l n="221">οἴχεται. διωκτέος δέ· μὴ γὰρ ἐγχάνῃ ποτὲ</l>
+               <l n="222">μηδέ περ γέροντας ὄντας ἐκφυγὼν Ἀχαρνέας.</l>
+
+               <l n="225"> ὅστις ὦ Ζεῦ πάτερ καὶ θεοὶ τοῖσιν ἐχθροῖσιν ἐσπείσατο, </l>
+               <l n="226"> οἷσι παρʼ ἐμοῦ πόλεμος ἐχθοδοπὸς αὔξεται τῶν ἐμῶν χωρίων· </l>
+               <l n="230">κοὐκ ἀνήσω πρὶν ἂν σχοῖνος αὐτοῖσιν ἀντεμπαγῶ</l>
+               <l n="231"> ὀξὺς ὀδυνηρὸς <gap reason="lost"/> ἐπίκωπος, ἵνα </l>
+               <l n="232">μήποτε πατῶσιν ἔτι τὰς ἐμὰς ἀμπέλους.</l>
+               <l n="234">ἀλλὰ δεῖ ζητεῖν τὸν ἄνδρα καὶ βλέπειν βαλληνάδε</l>
+               <l n="235">καὶ διώκειν γῆν πρὸ γῆς, ἕως ἂν εὑρεθῇ ποτέ·</l>
+               <l n="236">ὡς ἐγὼ βάλλων ἐκεῖνον οὐκ ἂν ἐμπλῄμην λίθοις.</l>
+            </sp>
+            
+            <stage>
+               <move type="entrance" ana="#voice-only" who="#dikaiopolis"/>
+            </stage>
+            
+            <sp who="#dikaiopolis">
+               <l n="237">εὐφημεῖτε, εὐφημεῖτε.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="238">σῖγα πᾶς. ἠκούσατʼ ἄνδρες ἆρα τῆς εὐφημίας;</l>
+               <l n="239">οὗτος αὐτός ἐστιν ὃν ζητοῦμεν. ἀλλὰ δεῦρο πᾶς</l>
+               <l n="240">ἐκποδών· θύσων γὰρ ἁνὴρ ὡς ἔοικʼ ἐξέρχεται.</l>
+            </sp>
+            
+            
+            <stage>
+               <move type="state-change" ana="#hidden" who="#choros"/>
+            </stage>
+            <milestone unit="large-seq" xml:id="L03"/>
+            <milestone unit="middle-seq" xml:id="s010"/>
+            <!-- Dikaiopolis' appearance on stage and the entrance of his household
+                 for the Rural Dionysia trigger the transition from s009 to s010,
+                 coinciding with the large-seq start boundary L03; the boundary is
+                 placed after the chorus conceals itself. The exit and return of the
+                 wife (263, 271) do not trigger a new segment. -->
+            <stage>
+               <move type="state-change" ana="#stage" who="#dikaiopolis"/>
+               <move type="entrance"
+                  who="#xanthias #oiketesDikaiopolidosA #thygaterDikaiopolidos #gyneDikaiopolidos"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="241">εὐφημεῖτε, εὐφημεῖτε.</l>
+               <l n="242">προΐτω σʼ τὸ πρόσθεν ὀλίγον ἡ κανηφόρος·</l>
+               <l n="243">ὁ Ξανθίας τὸν φαλλὸν ὀρθὸν στησάτω.</l>
+               <l n="244">κατάθου τὸ κανοῦν ὦ θύγατερ, ἵνʼ ἀπαρξώμεθα.</l>
+            </sp>
+            <sp who="#thygaterDikaiopolidos">
+               <l n="245">ὦ μῆτερ ἀνάδος δεῦρο τὴν ἐτνήρυσιν,</l>
+               <l n="246">ἵνʼ ἔτνος καταχέω τοὐλατῆρος τουτουί.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="247" part="I">καὶ μὴν καλόν γʼ ἔστʼ·</l>
+               <l n="247" part="F">ὦ Διόνυσε δέσποτα</l>
+               <l n="248">κεχαρισμένως σοι τήνδε τὴν πομπὴν ἐμὲ</l>
+               <l n="249">πέμψαντα καὶ θύσαντα μετὰ τῶν οἰκετῶν</l>
+               <l n="250">ἀγαγεῖν τυχηρῶς τὰ κατʼ ἀγροὺς Διονύσια,</l>
+               <l n="251">στρατιᾶς ἀπαλλαχθέντα· τὰς σπονδὰς δέ μοι</l>
+               <l n="252">καλῶς ξυνενεγκεῖν τὰς τριακοντούτιδας.</l>
+               <l n="253">ἄγʼ ὦ θύγατερ ὅπως τὸ κανοῦν καλὴ καλῶς</l>
+               <l n="254">οἴσεις βλέπουσα θυμβροφάγον. ὡς μακάριος</l>
+               <l n="255">ὅστις σʼ ὀπύσει κἀκποιήσεται γαλᾶς</l>
+               <l n="256">σοῦ μηδὲν ἥττους βδεῖν, ἐπειδὰν ὄρθρος ᾖ.</l>
+               <l n="257">πρόβαινε, κἀν τὤχλῳ φυλάττεσθαι σφόδρα</l>
+               <l n="258">μή τις λαθών σου περιτράγῃ τὰ χρυσία.</l>
+               <l n="259">ὦ Ξανθία, σφῷν δʼ ἐστὶν ὀρθὸς ἑκτέος</l>
+               <l n="260">ὁ φαλλὸς ἐξόπισθε τῆς κανηφόρου·</l>
+               <l n="261">ἐγὼ δʼ ἀκολουθῶν ᾄσομαι τὸ φαλλικόν·</l>
+               <l n="262">σὺ δʼ ὦ γύναι θεῶ μʼ ἀπὸ τοῦ τέγους. πρόβα.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#gyneDikaiopolidos"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="263">Φαλῆς ἑταῖρε Βακχίου</l>
+               <l n="264">ξύγκωμε νυκτοπεριπλάνητε</l>
+               <l n="265">μοιχὲ παιδεραστά,</l>
+               <l n="266">ἕκτῳ σʼ ἔτει προσεῖπον ἐς</l>
+               <l n="267">τὸν δῆμον ἐλθὼν ἄσμενος,</l>
+               <l n="268">σπονδὰς ποιησάμενος ἐμαυτῷ,</l>
+               <l n="269">πραγμάτων τε καὶ μαχῶν</l>
+               <l n="270">καὶ Λαμάχων ἀπαλλαγείς.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#gyneDikaiopolidos"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="271">πολλῷ γάρ ἐσθʼ ἥδιον, ὦ Φαλῆς Φαλῆς,</l>
+               <l n="272">κλέπτουσαν εὑρόνθʼ ὡρικὴν ὑληφόρον</l>
+               <l n="273">τὴν Στρυμοδώρου Θρᾷτταν ἐκ τοῦ Φελλέως</l>
+               <l n="274">μέσην λαβόντʼ ἄραντα καταβαλόντα</l>
+               <l n="275">καταγιγαρτίσʼ ὦ</l>
+               <l n="276">Φαλῆς Φαλῆς.</l>
+               <l n="277">ἐὰν μεθʼ ἡμῶν ξυμπίῃς, ἐκ κραιπάλης</l>
+               <l n="278">ἕωθεν εἰρήνης ῥοφήσει τρύβλιον·</l>
+               <l n="279">ἡ δʼ ἀσπὶς ἐν τῷ φεψάλῳ κρεμήσεται.</l>
+            </sp>
+            <milestone unit="middle-seq" xml:id="s011"/>
+            <!-- The chorus' emergence from hiding triggers the transition from s010
+                 to s011. The household's flight under the stoning (281) does not
+                 trigger a new segment, nor do Dikaiopolis' errands for the hostage (328-331) and for the chopping block (361-366). -->
+            <stage>
+               <move type="state-change" ana="#unhidden" who="#choros"/>
+            </stage>
+            <sp who="#choros">
+               <l n="280">οὗτος αὐτός ἐστιν, οὗτος.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#thygaterDikaiopolidos #xanthias #oiketesDikaiopolidosA #gyneDikaiopolidos"
+               />
+            </stage>
+            <sp who="#choros">
+               <l n="281">βάλλε βάλλε βάλλε βάλλε,</l>
+               <l n="282">παῖε παῖε τὸν μιαρόν.</l>
+               <l n="283">οὐ βαλεῖς; οὐ βαλεῖς;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="284">Ἡράκλεις τουτὶ τί ἐστι; τὴν χύτραν συντρίψετε.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="285">σὲ μὲν οὖν καταλεύσομεν ὦ μιαρὰ κεφαλή.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="286">ἀντὶ ποίας αἰτίας ὦχαρνέων γεραίτατοι;</l>
+            </sp>
+            <sp who="#choros">
+               <l n="288">τοῦτʼ ἐρωτᾷς; ἀναίσχυντος εἶ καὶ βδελυρὸς</l>
+               <l n="290">ὦ προδότα τῆς πατρίδος, ὅστις ἡμῶν μόνος</l>
+               <l n="291">σπεισάμενος εἶτα δύνασαι πρὸς ἔμʼ ἀποβλέπειν.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="293">ἀντὶ δʼ ὧν ἐσπεισάμην οὐκ ἴστε. μἀλλαʼ ἀκούσατε.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="295"> σοῦ γʼ ἀκούσωμεν; ἀπολεῖ· κατά σε χώσομεν τοῖς λίθοις. </l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="296"> μηδαμῶς πρὶν ἄν γʼ ἀκούσητʼ· ἀλλʼ ἀνάσχεσθʼ ὦγαθοί. </l>
+            </sp>
+            <sp who="#choros">
+               <l n="298">οὐκ ἀνασχήσομαι· μηδὲ λέγε μοι σὺ λόγον·</l>
+               <l n="300">ὡς μεμίσηκά σε Κλέωνος ἔτι μᾶλλον, ὃν ἐγὼ</l>
+               <l n="301">κατατεμῶ ποθʼ ἱππεῦσι καττύματα.</l>
+               <l n="302">σοῦ δʼ ἐγὼ λόγους λέγοντος οὐκ ἀκούσομαι μακρούς,</l>
+               <l n="303">ὅστις ἐσπείσω Λάκωσιν, ἀλλὰ τιμωρήσομαι.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="305">ὦγαθοὶ τοὺς μὲν Λάκωνας ἐκποδὼν ἐάσατε,</l>
+               <l n="306">τῶν δʼ ἐμῶν σπονδῶν ἀκούσατʼ, εἰ καλῶς ἐσπεισάμην.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="307"> πῶς δέ γʼ ἂν καλῶς λέγοις ἄν, εἴπερ ἐσπείσω γʼ ἅπαξ </l>
+               <l n="308">οἷσιν οὔτε βωμὸς οὔτε πίστις οὔθʼ ὅρκος μένει;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="309">οἶδʼ ἐγὼ καὶ τοὺς Λάκωνας, οἷς ἄγαν ἐγκείμεθα,</l>
+               <l n="310">οὐχ ἁπάντων ὄντας ἡμῖν αἰτίους τῶν πραγμάτων.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="311">οὐχ ἁπάντων ὦ πανοῦργε; ταῦτα δὴ τολμᾷς λέγειν</l>
+               <l n="312">ἐμφανῶς ἤδη πρὸς ἡμᾶς; εἶτʼ ἐγώ σου φείσομαι;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="313">οὐχ ἁπάντων, οὐχ ἁπάντων· ἀλλʼ ἐγὼ λέγων ὁδὶ</l>
+               <l n="314">πόλλʼ ἂν ἀποφήναιμʼ ἐκείνους ἔσθʼ ἃ κἀδικουμένους.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="315">τοῦτο τοὔπος δεινὸν ἤδη καὶ ταραξικάρδιον,</l>
+               <l n="316">εἰ σὺ τολμήσεις ὑπὲρ τῶν πολεμίων ἡμῖν λέγειν.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="317">κἄν γε μὴ λέγω δίκαια μηδὲ τῷ πλήθει δοκῶ,</l>
+               <l n="318">ὑπὲρ ἐπιξήνου ʼθελήσω τὴν κεφαλὴν ἔχων λέγειν.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="319">εἰπέ μοι τί φειδόμεσθα τῶν λίθων ὦ δημόται</l>
+               <l n="320">μὴ οὐ καταξαίνειν τὸν ἄνδρα τοῦτον ἐς φοινικίδα;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="321">οἷον αὖ μέλας τις ὑμῖν θυμάλωψ ἐπέζεσεν.</l>
+               <l n="322">οὐκ ἀκούσεσθʼ; οὐκ ἀκούσεσθʼ ἐτεὸν ὦχαρνηίδαι;</l>
+            </sp>
+            <sp who="#choros">
+               <l n="323" part="I">οὐκ ἀκουσόμεσθα δῆτα.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="323" part="F">δεινά τἄρα πείσομαι.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="324" part="I">ἐξολοίμην, ἢν ἀκούσω.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="324" part="F">μηδαμῶς ὦχαρνικοί.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="325" part="I">ὡς τεθνήξων ἴσθι νυνί.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="325" part="F">δήξομἄρʼ ὑμᾶς ἐγώ.</l>
+               <l n="326">ἀνταποκτενῶ γὰρ ὑμῶν τῶν φίλων τοὺς φιλτάτους·</l>
+               <l n="327">ὡς ἔχω γʼ ὑμῶν ὁμήρους, οὓς ἀποσφάξω λαβών.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#dikaiopolis"/>
+            </stage>
+            <sp who="#choros">
+               <l n="328">εἰπέ μοι, τί τοῦτʼ ἀπειλεῖ τοὔπος ἄνδρες δημόται</l>
+               <l n="329">τοῖς Ἀχαρνικοῖσιν ἡμῖν; μῶν ἔχει του παιδίον</l>
+               <l n="330">τῶν παρόντων ἔνδον εἵρξας; ἢ ʼπὶ τῷ θρασύνεται;</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#dikaiopolis"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="331">βάλλετʼ εἰ βούλεσθʼ. ἐγὼ γὰρ τουτονὶ διαφθερῶ.</l>
+               <l n="332">εἴσομαι δʼ ὑμῶν τάχʼ ὅστις ἀνθράκων τι κήδεται.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="333">ὡς ἀπωλόμεσθʼ. ὁ λάρκος δημότης ὅδʼ ἔστʼ ἐμός.</l>
+               <l n="334">ἀλλὰ μὴ δράσῃς ὃ μέλλεις· μηδαμῶς ὦ μηδαμῶς.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="335">ὡς ἀποκτενῶ, κέκραχθʼ· ἐγὼ γὰρ οὐκ ἀκούσομαι.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="336">ἀπολεῖς ἄρʼ ὁμήλικα τόνδε φιλανθρακέα;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="337">οὐδʼ ἐμοῦ λέγοντος ὑμεῖς ἀρτίως ἠκούσατε.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="338"> ἀλλὰ γὰρ νῦν λέγʼ, εἴ σοι δοκεῖ, τόν τε Λακεδαιμόνιον </l>
+               <l n="339">† αὐτὸν ὅτι τῷ † τρόπῳ σοὐστὶ φίλος·</l>
+               <l n="340">ὡς τόδε τὸ λαρκίδιον οὐ προδώσω ποτέ.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="341">τοὺς λίθους νύν μοι χαμᾶζε πρῶτον ἐξεράσατε.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="342">οὑτοιί σοι χαμαί, καὶ σὺ κατάθου πάλιν τὸ ξίφος.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="343"> ἀλλʼ ὅπως μὴ νʼ τοῖς τρίβωσιν ἐγκάθηνταί που λίθοι. </l>
+            </sp>
+            <sp who="#choros">
+               <l n="344">ἐκσέσεισται χαμᾶζʼ· οὐχ ὁρᾷς σειόμενον;</l>
+               <l n="345">ἀλλὰ μή μοι πρόφασιν, ἀλλὰ κατάθου τὸ βέλος.</l>
+               <l n="346">ὡς ὅδε γε σειστὸς ἅμα τῇ στροφῇ γίγνεται.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="347">ἐμέλλετʼ ἄρα πάντως ἀνήσειν τῆς βοῆς,</l>
+               <l n="348">ὀλίγου τʼ ἀπέθανον ἄνθρακες Παρνήθιοι,</l>
+               <l n="349">καὶ ταῦτα διὰ τὴν ἀτοπίαν τῶν δημοτῶν.</l>
+               <l n="350">ὑπὸ τοῦ δέους δὲ τῆς μαρίλης μοι συχνὴν</l>
+               <l n="351">ὁ λάρκος ἐνετίλησεν ὥσπερ σηπία.</l>
+               <l n="352">δεινὸν γὰρ οὕτως ὀμφακίαν πεφυκέναι</l>
+               <l n="353">τὸν θυμὸν ἀνδρῶν ὥστε βάλλειν καὶ βοᾶν</l>
+               <l n="354">ἐθέλειν τʼ ἀκοῦσαι μηδὲν ἴσον ἴσῳ φέρον,</l>
+               <l n="355">ἐμοῦ ʼθέλοντος ὑπὲρ ἐπιξήνου λέγειν</l>
+               <l n="356">ὑπὲρ Λακεδαιμονίων ἅπανθʼ ὅσʼ ἂν λέγω·</l>
+               <l n="357">καίτοι φιλῶ γε τὴν ἐμὴν ψυχὴν ἐγώ.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="358-359">τί οὖν οὐ λέγεις, ἐπίξηνον ἐξενεγκὼν θύραζʼ,</l>
+               <l n="360-362">ὅ τι ποτʼ ὦ σχέτλιε τὸ μέγα τοῦτʼ ἔχεις;</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#dikaiopolis"/>
+            </stage>
+            <sp who="#choros">
+               <l n="363">πάνυ γὰρ ἔμεγε πόθος ὅ τι φρονεῖς ἔχει.</l>
+               <l n="364">ἀλλʼ ᾗπερ αὐτὸς τὴν δίκην διωρίσω,</l>
+               <l n="365">θεὶς δεῦρο τοὐπίξηνον ἐγχείρει λέγειν.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#dikaiopolis"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="366">ἰδοὺ θεᾶσθε, τὸ μὲν ἐπίξηνον τοδί,</l>
+               <l n="367">ὁ δʼ ἀνὴρ ὁ λέξων οὑτοσὶ τυννουτοσί.</l>
+               <l n="368">ἀμέλει μὰ τὸν Δίʼ οὐκ ἐνασπιδώσομαι,</l>
+               <l n="369">λέξω δʼ ὑπὲρ Λακεδαιμονίων ἅ μοι δοκεῖ.</l>
+               <l n="370">καίτοι δέδοικα πολλά· τούς τε γὰρ τρόπους</l>
+               <l n="371">τοὺς τῶν ἀγροίκων οἶδα χαίροντας σφόδρα,</l>
+               <l n="372">ἐάν τις αὐτοὺς εὐλογῇ καὶ τὴν πόλιν</l>
+               <l n="373">ἀνὴρ ἀλαζὼν καὶ δίκαια κἄδικα·</l>
+               <l n="374">κἀνταῦθα λανθάνουσʼ ἀπεμπολώμενοι·</l>
+               <l n="375">τῶν τʼ αὖ γερόντων οἶδα τὰς ψυχὰς ὅτι</l>
+               <l n="376">οὐδὲν βλέπουσιν ἄλλο πλὴν ψηφηδακεῖν.</l>
+               <l n="377">αὐτός τʼ ἐμαυτὸν ὑπὸ Κλέωνος ἅπαθον</l>
+               <l n="378">ἐπίσταμαι διὰ τὴν πέρυσι κωμῳδίαν.</l>
+               <l n="379">εἰσελκύσας γάρ μʼ ἐς τὸ βουλευτήριον</l>
+               <l n="380">διέβαλλε καὶ ψευδῆ κατεγλώττιζέ μου</l>
+               <l n="381">κἀκυκλοβόρει κἄπλυνεν, ὥστʼ ὀλίγου πάνυ</l>
+               <l n="382">ἀπωλόμην μολυνοπραγμονούμενος.</l>
+               <l n="383">νῦν οὖν με πρῶτον πρὶν λέγειν ἐάσατε</l>
+               <l n="384">ἐνσκευάσασθαί μʼ οἷον ἀθλιώτατον.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="385">τί ταῦτα στρέφει τεχνάζεις τε καὶ πορίζεις τριβάς;</l>
+               <l n="386">λαβὲ δʼ ἐμοῦ γʼ ἓνεκα παρʼ Ἱερωνύμου</l>
+               <l n="390">σκοτοδασυπυκνότριχά τινʼ Ἄιδος κυνῆν·</l>
+               <l n="391">ἀλλʼ ἐξάνοιγε μηχανὰς τὰς Σισύφου,</l>
+               <l n="392">ὡς σκῆψιν ἁγὼν οὗτος οὐκ ἐσδέξεται.</l>
+            </sp>
+            <milestone unit="middle-seq" xml:id="s012"/>
+            <!-- The entrance of Kephisophon (396) triggers the transition from s011 to s012; the boundary is placed at 393, where Dikaiopolis turns to
+                 Euripides' door. The segment closes with the slave's refusal to call
+                 his master out and his exit. -->
+            <sp who="#dikaiopolis">
+               <l n="393">ὥρα ʼστὶν ἤδη καρτερὰν ψυχὴν λαβεῖν,</l>
+               <l n="394">καί μοι βαδιστέʼ ἐστὶν ὡς Εὐριπίδην.</l>
+               <l n="395" part="I">παῖ παῖ.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#kephisophon"/>
+            </stage>
+            <sp who="#kephisophon">
+               <l n="395" part="M">τίς οὗτος,</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="395" part="F">ἔνδον ἔστʼ Εὐριπίδης;</l>
+            </sp>
+            <sp who="#kephisophon">
+               <l n="396">οὐκ ἔνδον ἔνδον ἐστίν, εἰ γνώμην ἔχεις.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="397" part="I">πῶς ἔνδον εἶτʼ οὐκ ἔνδον;</l>
+            </sp>
+            <sp who="#kephisophon">
+               <l n="397" part="F">ὀρθῶς ὦ γέρον.</l>
+               <l n="398">ὁ νοῦς μὲν ἔξω ξυλλέγων ἐπύλλια</l>
+               <l n="399">οὐκ ἔνδον, αὐτὸς δʼ ἔνδον ἀναβάδην ποιεῖ</l>
+               <l n="400" part="I">τραγῳδίαν.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="400" part="F">ὦ τρισμακάριʼ Εὐριπίδη,</l>
+               <l n="401">ὅθʼ ὁ δοῦλος οὑτωσὶ σαφῶς ἀπεκρίνατο.</l>
+               <l n="402" part="I">ἐκκάλεσον αὐτόν.</l>
+            </sp>
+            <sp who="#kephisophon">
+               <l n="402" part="M">ἀλλʼ ἀδύνατον.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#kephisophon"/>
+            </stage>
+            <milestone unit="middle-seq" xml:id="s013"/>
+            <!-- The entrance of Euripides triggers the transition from s012 to s013;
+                 the boundary is placed after Kephisophon's exit, where Dikaiopolis
+                 resolves to knock himself (402), and his call motivates the entrance
+                 immediately (407). Euripides being wheeled out and Kephisophon's return (410) do not trigger new segments. -->
+            <sp who="#dikaiopolis">
+               <l n="402" part="F">ἀλλʼ ὅμως·</l>
+               <l n="403">οὐ γὰρ ἂν ἀπέλθοιμʼ, ἀλλὰ κόψω τὴν θύραν.</l>
+               <l n="404">Εὐριπίδη, Εὐριπίδιον,</l>
+               <l n="405">ὑπάκουσον, εἴπερ τώποτʼ ἀνθρώπων τινί·</l>
+               <l n="406">Δικαιόπολις καλεῖ σε Χολλῄδης, ἐγώ.</l>
+            </sp>
+            <stage>
+               <move type="entrance" ana="#voice-only" who="#euripides"/>
+            </stage>
+            <sp who="#euripides">
+               <l n="407">ἀλλʼ οὐ σχολή.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="408" part="I">ἀλλʼ ἐκκυκλήθητʼ.</l>
+            </sp>
+            <sp who="#euripides">
+               <l n="408" part="M">ἀλλʼ ἀδύνατον.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="408" part="F">ἀλλʼ ὅμως.</l>
+            </sp>
+            <sp who="#euripides">
+               <l n="409">ἀλλʼ ἐκκυκλήσομαι· καταβαίνειν δʼ οὐ σχολή.</l>
+            </sp>
+            <stage>
+               <move type="state-change" ana="#stage" who="#euripides"/>
+               <move type="entrance" who="#kephisophon"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="410" part="I">Εὐριπίδη,</l>
+            </sp>
+            <sp who="#euripides">
+               <l n="410" part="M">τί λέλακας;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="410" part="F">ἀναβάδην ποιεῖς,</l>
+               <l n="411">ἐξὸν καταβάδην; οὐκ ἐτὸς χωλοὺς ποιεῖς.</l>
+               <l n="412">ἀτὰρ τί τὰ ῥάκιʼ ἐκ τραγῳδίας ἔχεις,</l>
+               <l n="413">ἐσθῆτʼ ἐλεινήν; οὐκ ἐτὸς πτωχοὺς ποιεῖς.</l>
+               <l n="414">ἀλλʼ ἀντιβολῶ πρὸς τῶν γονάτων σʼ Εὐριπίδη,</l>
+               <l n="415">δός μοι ῥάκιόν τι τοῦ παλαιοῦ δράματος.</l>
+               <l n="416">δεῖ γάρ με λέξαι τῷ χορῷ ῥῆσιν μακράν·</l>
+               <l n="417">αὕτη δὲ θάνατον, ἢν κακῶς λέξω, φέρει.</l>
+            </sp>
+            <sp who="#euripides">
+               <l n="418">τὰ ποῖα τρύχη; μῶν ἐν οἷς Οἰνεὺς ὁδὶ</l>
+               <l n="419">ὁ δύσποτμος γεραιὸς ἠγωνίζετο;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="420">οὐκ Οἰνέως ἦν, ἀλλʼ ἔτʼ ἀθλιωτέρου.</l>
+            </sp>
+            <sp who="#euripides">
+               <l n="421" part="I">τὰ τοῦ τυφλοῦ Φοίνικος;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="421" part="F">οὐ Φοίνικος, οὔ·</l>
+               <l n="422">ἀλλʼ ἕτερος ἦν Φοίνικος ἀθλιώτερος.</l>
+            </sp>
+            <sp who="#euripides">
+               <l n="423">ποίας ποθʼ ἁνὴρ λακίδας αἰτεῖται πέπλων;</l>
+               <l n="424">ἀλλʼ ἦ Φιλοκτήτου τὰ τοῦ πτωχοῦ λέγεις;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="425">οὐκ ἀλλὰ τούτου πολὺ πολὺ πτωχιστέρου.</l>
+            </sp>
+            <sp who="#euripides">
+               <l n="426">ἀλλʼ ἦ τὰ δυσπινῆ ʼθέλεις πεπλώματα,</l>
+               <l n="427">ἃ Βελλεροφόντης εἶχʼ ὁ χωλὸς οὑτοσί;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="428">οὐ Βελλεροφόντης· ἀλλὰ κἀκεῖνος μὲν ἦν</l>
+               <l n="429">χωλὸς προσαιτῶν στωμύλος δεινὸς λέγειν.</l>
+            </sp>
+            <sp who="#euripides">
+               <l n="430" part="I">οἶδʼ ἄνδρα Μυσὸν Τήλεφον.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="430" part="F">ναὶ Τήλεφον·</l>
+               <l n="431">τούτου δὸς ἀντιβολῶ σέ μοι τὰ σπάργανα.</l>
+            </sp>
+            <sp who="#euripides">
+               <l n="432">ὦ παῖ δὸς αὐτῷ Τηλέφου ῥακώματα.</l>
+               <l n="433">κεῖται δʼ ἄνωθεν τῶν Θυεστείων ῥακῶν</l>
+               <l n="434" part="I">μεταξὺ τῶν Ἰνοῦς.</l>
+            </sp>
+            <sp who="#kephisophon">
+               <l n="434" part="F">ἰδοὺ ταυτὶ λαβέ.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="435">ὦ Ζεῦ διόπτα καὶ κατόπτα πανταχῇ,</l>
+               <l n="436">ἐνσκευάσασθαί μʼ οἷον ἀθλιώτατον.</l>
+               <l n="437">Εὐριπίδη, ʼπειδήπερ ἐχαρίσω ταδί,</l>
+               <l n="438">κἀκεῖνά μοι δὸς τἀκόλουθα τῶν ῥακῶν,</l>
+               <l n="439">τὸ πιλίδιον περὶ τὴν κεφαλὴν τὸ Μύσιον.</l>
+               <l n="440">δεῖ γάρ με δόξαι πτωχὸν εἶναι τήμερον,</l>
+               <l n="441">εἶναι μὲν ὅσπερ εἰμί, φαίνεσθαι δὲ μή·</l>
+               <l n="442">τοὺς μὲν θεατὰς εἰδέναι μʼ ὃς εἴμʼ ἐγώ,</l>
+               <l n="443">τοὺς δʼ αὖ χορευτὰς ἠλιθίους παρεστάναι,</l>
+               <l n="444">ὅπως ἂν αὐτοὺς ῥηματίοις σκιμαλίσω.</l>
+            </sp>
+            <sp who="#euripides">
+               <l n="445">δώσω· πυκνῇ γὰρ λεπτὰ μηχανᾷ φρενί.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="446">εὐδαιμονοίης, Τηλέφῳ δʼ ἁγὼ φρονῶ.</l>
+               <l n="447">εὖ γʼ οἷον ἤδη ῥηματίων ἐμπίμπλαμαι.</l>
+               <l n="448">ἀτὰρ δέομαί γε πτωχικοῦ βακτηρίου.</l>
+            </sp>
+            <sp who="#euripides">
+               <l n="449">τουτὶ λαβὼν ἄπελθε λαΐνων σταθμῶν.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="450">ὦ θύμʼ, ὁρᾷς γὰρ ὡς ἀπωθοῦμαι δόμων,</l>
+               <l n="451">πολλῶν δεόμενος σκευαρίων· νῦν δὴ γενοῦ</l>
+               <l n="452" part="I">γλίσχρος προσαιτῶν λιπαρῶν τʼ.</l>
+               <l n="452" part="F">Εὐριπίδη</l>
+               <l n="453">δός μοι σπυρίδιον διακεκαυμένον λύχνῳ.</l>
+            </sp>
+            <sp who="#euripides">
+               <l n="454">τί δʼ ὦ τάλας σε τοῦδʼ ἔχει πλέκους χρέος;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="455">χρέος μὲν οὐδέν, βούλομαι δʼ ὅμως λαβεῖν.</l>
+            </sp>
+            <sp who="#euripides">
+               <l n="456">λυπηρὸς ἴσθʼ ὢν κἀποχώρησον δόμων.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="457" part="I">φεῦ·</l>
+               <l n="457" part="F">εὐδαιμονοίης, ὥσπερ ἡ μήτηρ ποτέ.</l>
+            </sp>
+            <sp who="#euripides">
+               <l n="458" part="I">ἄπελθε νῦν μοι.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="458" part="F">μἀλλά μοι δὸς ἓν μόνον</l>
+               <l n="459">κοτυλίσκιον τὸ χεῖλος ἀποκεκρουσμένον.</l>
+            </sp>
+            <sp who="#euripides">
+               <l n="460">φθείρου λαβὼν τόδʼ· ἴσθʼ ὀχληρὸς ὢν δόμοις.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="461">οὔπω μὰ Δίʼ· οἶσθʼ οἷʼ αὐτὸς ἐργάζει κακά.</l>
+               <l n="462">ἀλλʼ ὦ γλυκύτατʼ Εὐριπίδη τουτὶ μόνον</l>
+               <l n="463">δός μοι χυτρίδιον σφογγίῳ βεβυσμένον.</l>
+            </sp>
+            <sp who="#euripides">
+               <l n="464">ὦνθρωπʼ ἀφαιρήσει με τὴν τραγῳδίαν·</l>
+               <l n="465" part="I">ἄπελθε ταυτηνὶ λαβών.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="465" part="F">ἀπέρχομαι.</l>
+               <l n="466">καίτοι τί δράσω; δεῖ γὰρ ἑνὸς οὗ μὴ τυχὼν</l>
+               <l n="467" part="I">ἀπόλωλʼ.</l>
+               <l n="467" part="F">ἄκουσον ὦ γλυκύτατʼ Εὐριπίδη·</l>
+               <l n="468">τουτὶ λαβὼν ἄπειμι κοὐ πρόσειμʼ ἔτι·</l>
+               <l n="469">ἐς τὸ σπυρίδιον ἰσχνά μοι φυλλεῖα δός.</l>
+            </sp>
+            <sp who="#euripides">
+               <l n="470">ἀπολεῖς μʼ. ἰδού σοι. φροῦδά μοι τὰ δράματα.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="471">ἀλλʼ οὐκέτʼ, ἀλλʼ ἄπειμι. καὶ γάρ εἰμʼ ἄγαν</l>
+               <l n="472">ὀχληρός, οὐ δοκῶν με κοιράνους στυγεῖν.</l>
+               <l n="473">οἴμοι κακοδαίμων, ὡς ἀπόλωλʼ. ἐπελαθόμην</l>
+               <l n="474">ἐν ᾧπέρ ἐστι πάντα μοι τὰ πράγματα.</l>
+               <l n="475">Εὐριπίδιον ὦ φιλτάτιον καὶ γλυκύτατον,</l>
+               <l n="476">κάκιστʼ ἀπολοίμην, εἴ τί σʼ αἰτήσαιμʼ ἔτι,</l>
+               <l n="477">πλὴν ἓν μόνον, τουτὶ μόνον τουτὶ μόνον,</l>
+               <l n="478">σκάνδικά μοι δὸς μητρόθεν δεδεγμένος.</l>
+            </sp>
+            <sp who="#euripides">
+               <l n="479">ἁνὴρ ὑβρίζει· κλῇε πηκτὰ δωμάτων.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#euripides #kephisophon"/>
+            </stage>
+            <milestone unit="middle-seq" xml:id="s014"/>
+            <!-- The exit of Euripides and Kephisophon triggers the transition from
+                 s013 to s014. The boundary is placed after their exit, so that
+                 Dikaiopolis' preparation for the speech (480-488) opens the new
+                 segment. The splitting of the chorus (557) does not trigger a new
+                 segment. -->
+            <sp who="#dikaiopolis">
+               <l n="480">ὦ θύμʼ ἄνευ σκάνδικος ἐμπορευτέα.</l>
+               <l n="481">ἆρʼ οἶσθʼ ὅσον τὸν ἀγῶνʼ ἀγωνιεῖ τάχα,</l>
+               <l n="482">μέλλων ὑπὲρ Λακεδαιμονίων ἀνδρῶν λέγειν;</l>
+               <l n="483">πρόβαινέ νυν ὦ θυμέ· γραμμὴ δʼ αὑτηί.</l>
+               <l n="484">ἕστηκας; οὐκ εἶ καταπιὼν Εὐριπίδην;</l>
+               <l n="485">ἐπῄνεσʼ· ἄγε νυν ὦ τάλαινα καρδία</l>
+               <l n="486">ἄπελθʼ ἐκεῖσε, κᾆτα τὴν κεφαλὴν ἐκεῖ</l>
+               <l n="487">παράσχες εἰποῦσʼ ἅττʼ ἂν αὐτῇ σοι δοκῇ.</l>
+               <l n="488">τόλμησον ἴθι χώρησον, ἄγαμαι καρδίας.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="490">τί δράσεις; τί φήσεις; εὖ ἴσθι νυν</l>
+               <l n="491">ἀναίσχυντος ὢν σιδηροῦς τʼ ἀνήρ,</l>
+               <l n="492">ὅστις παρασχὼν τῇ πόλει τὸν αὐχένα</l>
+               <l n="493">ἅπασι μέλλεις εἷς λέγειν τἀναντία.</l>
+               <l n="494">ἁνὴρ οὐ τρέμει τὸ πρᾶγμʼ. εἶά νυν,</l>
+               <l n="495">ἐπειδήπερ αὐτὸς αἱρεῖ, λέγε.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="496">μή μοι φθονήσητʼ ἄνδρες οἱ θεώμενοι,</l>
+               <l n="497">εἰ πτωχὸς ὢν ἔπειτʼ ἐν Ἀθηναίοις λέγειν</l>
+               <l n="498">μέλλω περὶ τῆς πόλεως, τρυγῳδίαν ποιῶν.</l>
+               <l n="500">τὸ γὰρ δίκαιον οἶδε καὶ τρυγῳδία.</l>
+               <l n="501">ἐγὼ δὲ λέξω δεινὰ μὲν δίκαια δέ.</l>
+               <l n="502">οὐ γάρ με νῦν γε διαβαλεῖ Κλέων ὅτι</l>
+               <l n="503">ξένων παρόντων τὴν πόλιν κακῶς λέγω.</l>
+               <l n="504">αὐτοὶ γάρ ἐσμεν οὑπὶ Ληναίῳ τʼ ἀγών,</l>
+               <l n="505">κοὔπω ξένοι πάρεισιν· οὔτε γὰρ φόροι</l>
+               <l n="506">ἥκουσιν οὔτʼ ἐκ τῶν πόλεων οἱ ξύμμαχοι·</l>
+               <l n="507">ἀλλʼ ἐσμὲν αὐτοὶ νῦν γε περιεπτισμένοι·</l>
+               <l n="508">τοὺς γὰρ μετοίκους ἄχυρα τῶν ἀστῶν λέγω.</l>
+               <l n="509">ἐγὼ δὲ μισῶ μὲν Λακεδαιμονίους σφόδρα,</l>
+               <l n="510">καὐτοῖς ὁ Ποσειδῶν οὑπὶ Ταινάρῳ θεὸς</l>
+               <l n="511">σείσας ἅπασιν ἐμβάλοι τὰς οἰκίας·</l>
+               <l n="512">κἀμοὶ γάρ ἐστʼ ἀμπέλια διακεκομμένα.</l>
+               <l n="513">ἀτὰρ φίλοι γὰρ οἱ παρόντες ἐν λόγῳ,</l>
+               <l n="514">τί ταῦτα τοὺς Λάκωνας αἰτιώμεθα;</l>
+               <l n="515">ἡμῶν γὰρ ἄνδρες, κοὐχὶ τὴν πόλιν λέγω,</l>
+               <l n="516">μέμνησθε τοῦθʼ ὅτι οὐχὶ τὴν πόλιν λέγω,</l>
+               <l n="517">ἀλλʼ ἀνδράρια μοχθηρά, παρακεκομμένα,</l>
+               <l n="518">ἄτιμα καὶ παράσημα καὶ παράξενα,</l>
+               <l n="519">ἐσυκοφάντει Μεγαρέων τὰ χλανίσκια·</l>
+               <l n="520">κεἴ που σίκυον ἴδοιεν ἢ λαγῴδιον</l>
+               <l n="521">ἢ χοιρίδιον ἢ σκόροδον ἢ χόνδρους ἅλας,</l>
+               <l n="522">ταῦτʼ ἦν Μεγαρικὰ κἀπέπρατʼ αὐθημερόν.</l>
+               <l n="523">καὶ ταῦτα μὲν δὴ σμικρὰ κἀπιχώρια,</l>
+               <l n="524">πόρνην δὲ Σιμαίθαν ἰόντες Μεγαράδε</l>
+               <l n="525">νεανίαι κλέπτουσι μεθυσοκότταβοι·</l>
+               <l n="526">κᾆθʼ οἱ Μεγαρῆς ὀδύναις πεφυσιγγωμένοι</l>
+               <l n="527">ἀντεξέκλεψαν Ἀσπασίας πόρνα δύο·</l>
+               <l n="528">κἀντεῦθεν ἀρχὴ τοῦ πολέμου κατερράγη</l>
+               <l n="529">Ἕλλησι πᾶσιν ἐκ τριῶν λαικαστριῶν.</l>
+               <l n="530">ἐντεῦθεν ὀργῇ Περικλέης οὑλύμπιος</l>
+               <l n="531">ἤστραπτʼ ἐβρόντα ξυνεκύκα τὴν Ἑλλάδα,</l>
+               <l n="532">ἐτίθει νόμους ὥσπερ σκόλια γεγραμμένους,</l>
+               <l n="533">ὡς χρὴ Μεγαρέας μήτε γῇ μήτʼ ἐν ἀγορᾷ</l>
+               <l n="534">μήτʼ ἐν θαλάττῃ μήτʼ ἐν οὐρανῷ μένειν.</l>
+               <l n="535">ἐντεῦθεν οἱ Μεγαρῆς, ὅτε δὴ ʼπείνων βάδην,</l>
+               <l n="536">Λακεδαιμονίων ἐδέοντο τὸ ψήφισμʼ ὅπως</l>
+               <l n="537">μεταστραφείη τὸ διὰ τὰς λαικαστρίας·</l>
+               <l n="538">κοὐκ ἠθέλομεν ἡμεῖς δεομένων πολλάκις.</l>
+               <l n="539">κἀντεῦθεν ἤδη πάταγος ἦν τῶν ἀσπίδων.</l>
+               <l n="540">ἐρεῖ τις, οὐ χρῆν· ἀλλὰ τί ἐχρῆν, εἴπατε.</l>
+               <l n="541">φέρʼ εἰ Λακεδαιμονίων τις ἐκπλεύσας σκάφει</l>
+               <l n="542">ἀπέδοτο φήνας κυνίδιον Σεριφίων,</l>
+               <l n="543">καθῆσθʼ ἂν ἐν δόμοισιν; ἦ πολλοῦ γε δεῖ·</l>
+               <l n="544">καὶ κάρτα μέντἂν εὐθέως καθείλκετε</l>
+               <l n="545">τριακοσίας ναῦς, ἦν δʼ ἂν ἡ πόλις πλέα</l>
+               <l n="546">θορύβου στρατιωτῶν, περὶ τριηράρχου βοῆς,</l>
+               <l n="547">μισθοῦ διδομένου, παλλαδίων χρυσουμένων,</l>
+               <l n="548">στοᾶς στεναχούσης, σιτίων μετρουμένων,</l>
+               <l n="549">ἀσκῶν, τροπωτήρων, κάδους ὠνουμένων,</l>
+               <l n="550">σκορόδων, ἐλαῶν, κρομμύων ἐν δικτύοις,</l>
+               <l n="551">στεφάνων, τριχίδων, αὐλητρίδων, ὑπωπίων·</l>
+               <l n="552">τὸ νεώριον δʼ αὖ κωπέων πλατουμένων,</l>
+               <l n="553">τύλων ψοφούντων, θαλαμιῶν τροπουμένων,</l>
+               <l n="554">αὐλῶν, κελευστῶν, νιγλάρων, συριγμάτων.</l>
+               <l n="555">ταῦτʼ οἶδʼ ὅτι ἂν ἐδρᾶτε· τὸν δὲ Τήλεφον</l>
+               <l n="556">οὐκ οἰόμεσθα; νοῦς ἄρʼ ἡμῖν οὐκ ἔνι.</l>
+            </sp>
+            <stage>
+               <move type="split" who="#choros" corresp="#hemichorionA #hemichorionB"/>
+            </stage>
+
+            <sp who="#hemichorionA">
+               <l n="557">ἄληθες ὦπίτριπτε καί μιαρώτατε;</l>
+               <l n="558">ταυτὶ σὺ τολμᾷς πτωχὸς ὢν ἡμᾶς λέγειν,</l>
+               <l n="559">καὶ συκοφάντης εἴ τις ἦν ὠνείδισας;</l>
+            </sp>
+            <sp who="#hemichorionB">
+               <l n="560">νὴ τὸν Ποσειδῶ καὶ λέγει γʼ ἅπερ λέγει</l>
+               <l n="561">δίκαια πάντα κοὐδὲν αὐτῶν ψεύδεται.</l>
+            </sp>
+            <sp who="#hemichorionA">
+               <l n="562">εἶτʼ εἰ δίκαια, τοῦτον εἰπεῖν αὔτʼ ἐχρῆν;</l>
+               <l n="563">ἀλλʼ οὔτι χαίρων ταῦτα τολμήσει λέγειν.</l>
+            </sp>
+            <sp who="#hemichorionB">
+               <l n="564">οὗτος σὺ ποῖ θεῖς; οὐ μενεῖς; ὡς εἰ θενεῖς</l>
+               <l n="565">τὸν ἄνδρα τοῦτον, αὐτὸς ἀρθήσει τάχα.</l>
+            </sp>
+            <milestone unit="middle-seq" xml:id="s015"/>
+            <!-- The entrance of Lamachos (572) triggers the transition from s014 to s015;
+                 the boundary is placed at 566, before the verses that call him out.
+                 The re-merging of the semichoruses (620) does not trigger a new segment, and the segment closes with his exit (623). -->
+            <sp who="#hemichorionA">
+               <l n="566">ἰὼ Λάμαχʼ ὦ βλέπων ἀστραπάς,</l>
+               <l n="567">βοήθησον ὦ γοργολόφα φανείς,</l>
+               <l n="568">ἰὼ Λάμαχʼ ὦ φίλʼ ὦ φυλέτα·</l>
+               <l n="569">εἴτε τις ἔστι ταξίαρχος ἢ στρατηγὸς ἢ</l>
+               <l n="570">τειχομάχας ἀνήρ, βοηθησάτω</l>
+               <l n="571">τις ἀνύσας. ἐγὼ γὰρ ἔχομαι μέσος.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#lamachos #lochitaiLamachou"/>
+            </stage>
+            <sp who="#lamachos">
+               <l n="572">πόθεν βοῆς ἤκουσα πολεμιστηρίας;</l>
+               <l n="573">ποῖ χρὴ βοηθεῖν; ποῖ κυδοιμὸν ἐμβαλεῖν;</l>
+               <l n="574">τίς Γοργόνʼ ἐξήγειρεν ἐκ τοῦ σάγματος;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="575">ὦ Λάμαχʼ ἥρως, τῶν λόφων καὶ τῶν λόχων.</l>
+            </sp>
+            <sp who="#hemichorionA">
+               <l n="576">ὦ Λάμαχʼ, οὐ γὰρ οὗτος ἅνθρωπος πάλαι</l>
+               <l n="577">ἅπασαν ἡμῶν τὴν πόλιν κακορροθεῖ;</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="577a">οὗτος σὺ τολμᾷς πτωχὸς ὢν λέγειν τάδε;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="578">ὦ Λάμαχʼ ἥρως, ἀλλὰ συγγνώμην ἔχε,</l>
+               <l n="579">εἰ πτωχὸς ὢν εἶπόν τι κἀστωμυλάμην.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="580" part="I">τί δʼ εἶπας ἡμᾶς; οὐκ ἐρεῖς;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="580" part="F">οὐκ οἶδά πω·</l>
+               <l n="581">ὑπὸ τοῦ δέους γὰρ τῶν ὅπλων εἰλιγγιῶ.</l>
+               <l n="582">ἀλλʼ ἀντιβολῶ σʼ ἀπένεγκέ μου τὴν μορμόνα.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="583" part="I">ἰδού.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="583" part="F">παράθες νυν ὑπτίαν αὐτὴν ἐμοί.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="584" part="I">κεῖται.</l>
+               <l n="584" part="F">φέρε νυν ἀπὸ τοῦ κράνους μοι τὸ πτερόν.</l>
+               <l n="585" part="I">τουτὶ πτίλον σοι.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="585" part="F">τῆς κεφαλῆς νύν μου λαβοῦ,</l>
+               <l n="586">ἵνʼ ἐξεμέσω· βδελύττομαι γὰρ τοὺς λόφους.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="587">οὗτος τί δράσεις; τῷ πτίλῳ μέλλεις ἐμεῖν;</l>
+               <l n="588" part="I">πτίλον γάρ ἐστιν—</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="588" part="F">εἰπέ μοι τίνος ποτὲ</l>
+               <l n="589">ὄρνιθός ἐστιν; ἆρα κομπολακύθου;</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="590" part="I">οἴμʼ ὡς τεθνήξεις.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="590" part="F">μηδαμῶς ὦ Λάμαχε·</l>
+               <l n="591">οὐ γὰρ κατʼ ἰσχύν ἐστιν· εἰ δʼ ἰσχυρὸς εἶ,</l>
+               <l n="592">τί μʼ οὐκ ἀπεψώλησας; εὔοπλος γὰρ εἶ.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="593">ταυτὶ λέγεις σὺ τὸν στρατηγὸν πτωχὸς ὤν;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="594" part="I">ἐγὼ γάρ εἰμι πτωχός;</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="594" part="F">ἀλλὰ τίς γὰρ εἶ;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="595">ὅστις; πολίτης χρηστός, οὐ σπουδαρχίδης,</l>
+               <l n="596">ἀλλʼ ἐξ ὅτου περ ὁ πόλεμος, στρατωνίδης,</l>
+               <l n="597">σὺ δʼ ἐξ ὅτου περ ὁ πόλεμος, μισθαρχίδης.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="598" part="I">ἐχειροτόνησαν γάρ με —</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="598" part="F">κόκκυγές γε τρεῖς.</l>
+               <l n="599">ταῦτʼ οὖν ἐγὼ βδελυττόμενος ἐσπεισάμην,</l>
+               <l n="600">ὁρῶν πολιοὺς μὲν ἄνδρας ἐν ταῖς τάξεσιν,</l>
+               <l n="601">νεανίας δʼ οἵους σὺ διαδεδρακότας,</l>
+               <l n="602">τοὺς μὲν ἐπὶ Θρᾴκης μισθοφοροῦντας τρεῖς δραχμάς,</l>
+               <l n="603">Τεισαμενοφαινίππους Πανουργιππαρχίδας,</l>
+               <l n="604">ἑτέρους δὲ παρὰ Χάρητι τοὺς δʼ ἐν Χάοσιν,</l>
+               <l n="605">Γερητοθεοδώρους Διομειαλαζόνας,</l>
+               <l n="606">τοὺς δʼ ἐν Καμαρίνῃ κἀν Γέλα κἀν Καταγέλᾳ.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="607" part="I">ἐχειροτονήθησαν γάρ.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="607" part="F">αἴτιον δὲ τί</l>
+               <l n="608">ὑμᾶς μὲν ἀεὶ μισθοφορεῖν ἁμῃγέπῃ,</l>
+               <l n="609">τωνδὶ δὲ μηδένʼ; ἐτεὸν ὦ Μαριλάδη</l>
+               <l n="610">ἤδη πεπρέσβευκας σὺ πολιὸς ὢν † ἓν ἢ; †</l>
+               <l n="611">ἀνένευσε· καίτοι γʼ ἐστὶ σώφρων κἀργάτης.</l>
+               <l n="612">τί δαὶ Δράκυλλος ἢ Εὐφορίδης ἢ Πρινίδης;</l>
+               <l n="613">εἶδέν τις ὑμῶν τἀκβάτανʼ ἢ τοὺς Χάονας;</l>
+               <l n="614">οὔ φασιν. ἀλλʼ ὁ Κοισύρας καὶ Λάμαχος,</l>
+               <l n="615">οἷς ὑπʼ ἐράνου τε καὶ χρεῶν πρώην ποτέ,</l>
+               <l n="616">ὥσπερ ἀπόνιπτρον ἐκχέοντες ἑσπέρας,</l>
+               <l n="617"> ἅπαντες <q>ἐξίστω</q> παρῄνουν οἱ φίλοι. </l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="618">ὦ δημοκρατία ταῦτα δῆτʼ ἀνασχετά;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="619">οὐ δῆτʼ ἐὰν μὴ μισθοφορῇ γε Λάμαχος.</l>
+            </sp>
+            <stage>
+               <move type="merge" who="#hemichorionA #hemichorionB" corresp="#choros"/>
+            </stage>
+            <sp who="#lamachos">
+               <l n="620">ἀλλʼ οὖν ἐγὼ μὲν πᾶσι Πελοποννησίοις</l>
+               <l n="621">ἀεὶ πολεμήσω καὶ ταράξω πανταχῇ</l>
+               <l n="622">καὶ ναυσὶ καὶ πεζοῖσι κατὰ τὸ καρτερόν.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#lamachos #lochitaiLamachou"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="623">ἐγὼ δὲ κηρύττω γε Πελοποννησίοις</l>
+               <l n="624">ἅπασι καὶ Μεγαρεῦσι καὶ Βοιωτίοις</l>
+               <l n="625">πωλεῖν ἀγοράζειν πρὸς ἐμέ, Λαμάχῳ δὲ μή.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#dikaiopolis"/>
+            </stage>
+            <milestone unit="large-seq" type="parabasis" xml:id="L04"/>
+            <milestone unit="middle-seq" xml:id="s016"/>
+            <!-- The exit of Lamachos and of Dikaiopolis leaves the stage to the
+                 chorus, triggering the transition from s015 to s016, coinciding with
+                 the large-seq start boundary L04 (parabasis). -->
+            <sp who="#choros">
+               <l n="626">ἁνὴρ νικᾷ τοῖσι λόγοισιν, καὶ τὸν δῆμον μεταπείθει</l>
+               <l n="627"> περὶ τῶν σπονδῶν. ἀλλʼ ἀποδύντες τοῖς ἀναπαίστοις ἐπίωμεν. </l>
+               <l n="628"> ἐξ οὗ γε χοροῖσιν ἐφέστηκεν τρυγικοῖς ὁ διδάσκαλος ἡμῶν, </l>
+               <l n="629">οὔπω παρέβη πρὸς τὸ θέατρον λέξων ὡς δεξιός ἐστιν·</l>
+               <l n="630"> διαβαλλόμενος δʼ ὑπὸ τῶν ἐχθρῶν ἐν Ἀθηναίοις ταχυβούλοις, </l>
+               <l n="631"> ὡς κωμῳδεῖ τὴν πόλιν ἡμῶν καὶ τὸν δῆμον καθυβρίζει, </l>
+               <l n="632"> ἀποκρίνασθαι δεῖται νυνὶ πρὸς Ἀθηναίους μεταβούλους. </l>
+               <l n="633">φησὶν δʼ εἶναι πολλῶν ἀγαθῶν ἄξιος ὑμῖν ὁ ποιητής,</l>
+               <l n="634">παύσας ὑμᾶς ξενικοῖσι λόγοις μὴ λίαν ἐξαπατᾶσθαι,</l>
+               <l n="635"> μήθʼ ἥδεσθαι θωπευομένους, μήτʼ εἶναι χαυνοπολίτας. </l>
+               <l n="636"> πρότερον δʼ ὑμᾶς ἀπὸ τῶν πόλεων οἱ πρέσβεις ἐξαπατῶντες </l>
+               <l n="637"> πρῶτον μὲν ἰοστεφάνους ἐκάλουν· κἀπειδὴ τοῦτό τις εἴποι, </l>
+               <l n="638"> εὐθὺς διὰ τοὺς στεφάνους ἐπʼ ἄκρων τῶν πυγιδίων ἐκάθησθε. </l>
+               <l n="639"> εἰ δέ τις ὑμᾶς ὑποθωπεύσας λιπαρὰς καλέσειεν Ἀθήνας, </l>
+               <l n="640"> ηὕρετο πᾶν ἂν διὰ τὰς λιπαράς, ἀφύων τιμὴν περιάψας. </l>
+               <l n="641">ταῦτα ποιήσας πολλῶν ἀγαθῶν αἴτιος ὑμῖν γεγένηται,</l>
+               <l n="642"> καὶ τοὺς δήμους ἐν ταῖς πόλεσιν δείξας ὡς δημοκρατοῦνται. </l>
+               <l n="643"> τοιγάρτοι νῦν ἐκ τῶν πόλεων τὸν φόρον ὑμῖν ἀπάγοντες </l>
+               <l n="644"> ἥξουσιν ἰδεῖν ἐπιθυμοῦντες τὸν ποιητὴν τὸν ἄριστον, </l>
+               <l n="645"> ὅστις παρεκινδύνευσʼ εἰπεῖν ἐν Ἀθηναίοις τὰ δίκαια. </l>
+               <l n="646"> οὕτω δʼ αὐτοῦ περὶ τῆς τόλμης ἤδη πόρρω κλέος ἥκει, </l>
+               <l n="647"> ὅτε καὶ βασιλεὺς Λακεδαιμονίων τὴν πρεσβείαν βασανίζων </l>
+               <l n="648"> ἠρώτησεν πρῶτα μὲν αὐτοὺς πότεροι ταῖς ναυσὶ κρατοῦσιν, </l>
+               <l n="649"> εἶτα δὲ τοῦτον τὸν ποιητὴν ποτέρους εἴποι κακὰ πολλά· </l>
+               <l n="650"> τούτους γὰρ ἔφη τοὺς ἀνθρώπους πολὺ βελτίους γεγενῆσθαι </l>
+               <l n="651"> καὶ τῷ πολέμῳ πολὺ νικήσειν τοῦτον ξύμβουλον ἔχοντας. </l>
+               <l n="652"> διὰ ταῦθʼ ὑμᾶς Λακεδαιμόνιοι τὴν εἰρήνην προκαλοῦνται </l>
+               <l n="653"> καὶ τὴν Αἴγιναν ἀπαιτοῦσιν· καὶ τῆς νήσου μὲν ἐκείνης </l>
+               <l n="654"> οὐ φροντίζουσʼ, ἀλλʼ ἵνα τοῦτον τὸν ποιητὴν ἀφέλωνται. </l>
+               <l n="655"> ἀλλʼ ὑμεῖς τοι μή ποτʼ ἀφῆσθʼ· ὡς κωμῳδήσει τὰ δίκαια· </l>
+               <l n="656"> φησὶν δʼ ὑμᾶς πολλὰ διδάξειν ἀγάθʼ, ὥστʼ εὐδαίμονας εἶναι, </l>
+               <l n="657"> οὐ θωπεύων οὐδʼ ὑποτείνων μισθοὺς οὐδʼ ἐξαπατύλλων, </l>
+               <l n="658"> οὐδὲ πανουργῶν οὐδὲ κατάρδων, ἀλλὰ τὰ βέλτιστα διδάσκων. </l>
+               <l n="659">πρὸς ταῦτα Κλέων καὶ παλαμάσθω</l>
+               <l n="660">καὶ πᾶν ἐπʼ ἐμοὶ τεκταινέσθω.</l>
+               <l n="661">τὸ γὰρ εὖ μετʼ ἐμοῦ καὶ τὸ δίκαιον</l>
+               <l n="662">ξύμμαχον ἔσται, κοὐ μή ποθʼ ἁλῶ</l>
+               <l n="663">περὶ τὴν πόλιν ὢν ὥσπερ ἐκεῖνος</l>
+               <l n="664">δειλὸς καὶ λακαταπύγων. </l>
+               <l n="665"> δεῦρο Μοῦσʼ ἐλθὲ φλεγυρὰ πυρὸς ἔχουσα μένος ἔντονος Ἀχαρνική. </l>
+               <l n="668"> οἷον ἐξ ἀνθράκων πρινίνων φέψαλος ἀνήλατʼ ἐρεθιζόμενος οὐρίᾳ ῥιπίδι, </l>
+               <l n="670">ἡνίκʼ ἂν ἐπανθρακίδες ὦσι παρακείμεναι,</l>
+               <l n="673">οἱ δὲ Θασίαν ἀνακυκῶσι λιπαράμπυκα,</l>
+               <l n="674"> οἱ δὲ μάττωσιν, οὕτω σοβαρὸν ἐλθὲ μέλος ἔντονον ἀγροικότερον </l>
+               <l n="675">ὡς ἐμὲ λαβοῦσα τὸν δημότην.</l>
+               <l n="676">οἱ γέροντες οἱ παλαιοὶ μεμφόμεσθα τῇ πόλει·</l>
+               <l n="677">οὐ γὰρ ἀξίως ἐκείνων ὧν ἐναυμαχήσαμεν</l>
+               <l n="678">γηροβοσκούμεσθʼ ὑφʼ ὑμῶν, ἀλλὰ δεινὰ πάσχομεν,</l>
+               <l n="679">οἵτινες γέροντας ἄνδρας ἐμβαλόντες ἐς γραφὰς</l>
+               <l n="680">ὑπὸ νεανίσκων ἐᾶτε καταγελᾶσθαι ῥητόρων,</l>
+               <l n="681">οὐδὲν ὄντας, ἀλλὰ κωφοὺς καὶ παρεξηυλημένους,</l>
+               <l n="682">οἷς Ποσειδῶν ἀσφάλειός ἐστιν ἡ βακτηρία·</l>
+               <l n="683">τονθορύζοντες δὲ γήρᾳ τῷ λίθῳ προσέσταμεν,</l>
+               <l n="684">οὐχ ὁρῶντες οὐδὲν εἰ μὴ τῆς δίκης τὴν ἠλύγην.</l>
+               <l n="685">ὁ δέ, νεανίας ἑαυτῷ σπουδάσας ξυνηγορεῖν,</l>
+               <l n="686">ἐς τάχος παίει ξυνάπτων στρογγύλοις τοῖς ῥήμασιν·</l>
+               <l n="687">κᾆτʼ ἀνελκύσας ἐρωτᾷ σκανδάληθρʼ ἱστὰς ἐπῶν</l>
+               <l n="688">ἄνδρα Τιθωνὸν σπαράττων καὶ ταράττων καὶ κυκῶν.</l>
+               <l n="689">ὁ δʼ ὑπὸ γήρως μασταρύζει, κᾆτʼ ὀφλὼν ἀπέρχεται,</l>
+               <l n="690">εἶτα λύζει καὶ δακρύει καὶ λέγει πρὸς τοὺς φίλους,</l>
+               <l n="691">
+                  <q>οὗ μʼ ἐχρῆν σορὸν πρίασθαι τοῦτʼ ὀφλὼν ἀπέρχομαι.</q>
+               </l>
+               <l n="692"> ταῦτα πῶς εἰκότα, γέροντʼ ἀπολέσαι πολιὸν ἄνδρα περὶ κλεψύδραν, </l>
+               <l n="695">πολλὰ δὴ ξυμπονήσαντα καὶ θερμὸν ἀπο-</l>
+               <l n="696">μορξάμενον ἀνδρικὸν ἱδρῶτα δὴ καὶ πολύν,</l>
+               <l n="697">ἄνδρʼ ἀγαθὸν ὄντα Μαραθῶνι περὶ τὴν πόλιν;</l>
+               <l n="698">εἶτα Μαραθῶνι μὲν ὅτʼ ἦμεν ἐδιώκομεν,</l>
+               <l n="700"> νῦν δʼ ὑπʼ ἀνδρῶν πονηρῶν σφόδρα διωκόμεθα, κᾆτα προσαλισκόμεθα. </l>
+               <l n="702">πρὸς τάδε τίς ἀντερεῖ Μαρψίας;</l>
+               <l n="703">τῷ γὰρ εἰκὸς ἄνδρα κυφὸν ἡλίκον Θουκυδίδην</l>
+               <l n="704">ἐξολέσθαι συμπλακέντα τῇ Σκυθῶν ἐρημίᾳ,</l>
+               <l n="705">τῷδε τῷ Κηφισοδήμῳ τῷ λάλῳ ξυνηγόρῳ;</l>
+               <l n="706">ὥστʼ ἐγὼ μὲν ἠλέησα κἀπεμορξάμην ἰδὼν</l>
+               <l n="707">ἄνδρα πρεσβύτην ὑπʼ ἀνδρὸς τοξότου κυκώμενον,</l>
+               <l n="708">ὃς μὰ τὴν Δήμητρʼ, ἐκεῖνος ἡνίκʼ ἦν Θουκυδίδης,</l>
+               <l n="709">οὐδʼ ἂν αὐτὴν τὴν Ἀχαίαν ῥᾳδίως ἠνέσχετο,</l>
+               <l n="710">ἀλλὰ κατεπάλαισε μέντἂν πρῶτον Εὐάθλους δέκα,</l>
+               <l n="711">κατεβόησε δʼ ἂν κεκραγὼς τοξότας τρισχιλίους,</l>
+               <l n="712"> περιετόξευσεν δʼ ἂν αὐτοῦ τοῦ πατρὸς τοὺς ξυγγενεῖς. </l>
+               <l n="713">ἀλλʼ ἐπειδὴ τοὺς γέροντας οὐκ ἐᾶθʼ ὕπνου τυχεῖν,</l>
+               <l n="714">ψηφίσασθε χωρὶς εἶναι τὰς γραφάς, ὅπως ἂν ᾖ</l>
+               <l n="715">τῷ γέροντι μὲν γέρων καὶ νωδὸς ὁ ξυνήγορος,</l>
+               <l n="716">τοῖς νέοισι δʼ εὐρύπρωκτος καὶ λάλος χὠ Κλεινίου.</l>
+               <l n="717">κἀξελαύνειν χρὴ τὸ λοιπόν, κἂν φύγῃ τις ζημιοῦν,</l>
+               <l n="718">τὸν γέροντα τῷ γέροντι, τὸν νέον δὲ τῷ νέῳ.</l>
+            </sp>
+            <milestone unit="large-seq" xml:id="L05"/>
+            <milestone unit="middle-seq" xml:id="s017"/>
+            <!-- The entrance of Dikaiopolis to proclaim his private market triggers
+                 the transition from s016 to s017, coinciding with the large-seq
+                 start boundary L05. -->
+            <stage>
+               <move type="entrance" who="#dikaiopolis"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="719">ὅροι μὲν ἀγορᾶς εἰσιν οἵδε τῆς ἐμῆς.</l>
+               <l n="720">ἐνταῦθʼ ἀγοράζειν πᾶσι Πελοποννησίοις</l>
+               <l n="721">ἔξεστι καὶ Μεγαρεῦσι καὶ Βοιωτίοις,</l>
+               <l n="722">ἐφʼ ᾧτε πωλεῖν πρὸς ἐμέ, Λαμάχῳ δὲ μή.</l>
+               <l n="723">ἀγορανόμους δὲ τῆς ἀγορᾶς καθίσταμαι</l>
+               <l n="724">τρεῖς τοὺς λαχόντας τούσδʼ ἱμάντας ἐκ Λεπρῶν.</l>
+               <l n="725">ἐνταῦθα μήτε συκοφάντης εἰσίτω</l>
+               <l n="726">μήτʼ ἄλλος ὅστις Φασιανός ἐστʼ ἀνήρ.</l>
+               <l n="727">ἐγὼ δὲ τὴν στήλην καθʼ ἣν ἐσπεισάμην</l>
+               <l n="728">μέτειμʼ, ἵνα στήσω φανερὰν ἐν τἀγορᾷ.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#dikaiopolis"/>
+               <milestone unit="middle-seq" xml:id="s018"/>
+               <!-- Dikaiopolis' exit for the stele and the entrance of the Megarian
+                    with his daughters trigger the transition from s017 to s018; the
+                    boundary is placed inside the stage cluster, between the two moves. -->
+               <move type="entrance" who="#megareus #koreMegareosA #koreMegareosB"/>
+            </stage>
+
+            <sp who="#megareus">
+               <l n="729">ἀγορὰ νʼ Ἀθάναις χαῖρε Μεγαρεῦσιν φίλα.</l>
+               <l n="730">ἐπόθουν τυ ναὶ τὸν φίλιον ᾇπερ ματέρα.</l>
+               <l n="731">ἀλλʼ ὦ πόνηρα κώριʼ ἀθλίω πατρός,</l>
+               <l n="732">ἄμβατε ποττὰν μᾶδδαν, αἴ χʼ εὕρητέ πᾶ.</l>
+               <l n="733">ἀκούετε δή, ποτέχετʼ ἐμὶν τὰν γαστέρα·</l>
+               <l n="734">πότερα πεπρᾶσθαι χρῄδδετʼ ἢ πεινῆν κακῶς;</l>
+            </sp>
+            <sp who="#koreMegareosA #koreMegareosB">
+               <l n="735">πεπρᾶσθαι πεπρᾶσθαι.</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="736">ἐγώνγα καὐτός φαμι. τίς δʼ οὕτως ἄνους</l>
+               <l n="737">ὃς ὑμέ κα πρίαιτο φανερὰν ζαμίαν;</l>
+               <l n="738">ἀλλʼ ἔστι γάρ μοι Μεγαρικά τις μαχανά,</l>
+               <l n="739">χοίρως γὰρ ὑμὲ σκευάσας φασῶ φέρειν.</l>
+               <l n="740">περίθεσθε τάσδε τὰς ὁπλὰς τῶν χοιρίων.</l>
+               <l n="741">ὅπως δὲ δοξεῖτʼ εἶμεν ἐξ ἀγαθᾶς ὑός·</l>
+               <l n="742">ὡς ναὶ τὸν Ἑρμᾶν, αἴπερ ἱξεῖτʼ οἴκαδις</l>
+               <l n="743">ἄπρατα, πειρασεῖσθε τᾶς λιμῶ κακῶς.</l>
+               <l n="744">ἀλλʼ ἀμφίθεσθε καὶ ταδὶ τὰ ῥυγχία,</l>
+               <l n="745">κἤπειτεν ἐς τὸυ σάκκον ὧδʼ ἐσβαίνετε.</l>
+               <l n="746">ὅπως δὲ γρυλλιξεῖτε καὶ κοΐξετε</l>
+               <l n="747">χἠσεῖτε φωνὰν χοιρίων μυστηρικῶν.</l>
+            </sp>
+            <milestone unit="middle-seq" xml:id="s019"/>
+            <!-- The entrance of Dikaiopolis triggers the transition from s018 to
+                 s019; the boundary is placed before the Megarian's call to him,
+                 which motivates the entrance immediately (750). His speech is
+                 divided at 748, where he turns from his daughters to call outward.
+                 The slave sent out and back (807) does not trigger a new segment. The segment closes with Dikaiopolis' exit (816). -->
+            <sp who="#megareus">
+               <l n="748">ἐγὼν δὲ καρυξῶ Δικαιόπολιν ὅπᾳ·</l>
+               <l n="749">Δικαιόπολι, ἦ λῇς πρίασθαι χοιρία;</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#dikaiopolis"/>
+            </stage>
+
+            <sp who="#dikaiopolis">
+               <l n="750" part="I">τί; ἀνὴρ Μεγαρικός;</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="750" part="F">ἀγορασοῦντες ἵκομες.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="751" part="I">πῶς ἔχετε;</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="751" part="F">διαπεινᾶμες ἀεὶ ποττὸ πῦρ.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="752">ἀλλʼ ἡδύ τοι νὴ τὸν Δίʼ, ἢν αὐλὸς παρῇ.</l>
+               <l n="753" part="I">τί δʼ ἄλλο πράττεθʼ οἱ Μεγαρῆς νῦν;</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="753" part="F">οἷα δή.</l>
+               <l n="754">ὅκα μὲν ἐγὼν τηνῶθεν ἐμπορευόμαν,</l>
+               <l n="755">ἄνδρες πρόβουλοι τοῦτʼ ἔπραττον τᾷ πόλει,</l>
+               <l n="756">ὅπως τάχιστα καὶ κάκιστʼ ἀπολοίμεθα.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="757" part="I">αὐτίκʼ ἄρʼ ἀπαλλάξεσθε πραγμάτων.</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="757" part="F">σά μάν;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="758">τί δʼ ἄλλο Μεγαροῖ; πῶς ὁ σῖτος ὤνιος;</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="759">παρʼ ἁμὶ πολυτίματος ᾇπερ τοὶ θεοί.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="760" part="I">ἅλας οὖν φέρεις;</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="760" part="F">οὐχ ὑμὲς αὐτῶν ἄρχετε;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="761" part="I">οὐδὲ σκόροδα;</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="761" part="F">ποῖα σκόροδʼ; ὑμὲς τῶν ἀεί,</l>
+               <l n="762">ὅκκʼ ἐσβάλητε, τὼς ἀρωραῖοι μύες</l>
+               <l n="763">πάσσακι τὰς ἄγλιθας ἐξορύσσετε.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="764" part="I">τί δαὶ φέρεις;</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="764" part="F">χοίρως ἐγώνγα μυστικάς.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="765" part="I">καλῶς λέγεις· ἐπίδειξον.</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="765" part="F">ἀλλὰ μὰν καλαί.</l>
+               <l n="766">ἄντεινον αἰ λῇς· ὡς παχεῖα καὶ καλά.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="767" part="I">τουτὶ τί ἦν τὸ πρᾶγμα;</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="767" part="F">χοῖρος ναὶ Δία.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="768" part="I">τί λέγεις σύ; ποδαπὴ δή ʼστι χοῖρος;</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="768" part="F">Μεγαρικά.</l>
+               <l n="769" part="I">ἢ οὐ χοῖρός ἐσθʼ ἅδʼ;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="769" part="F">οὐκ ἔμοιγε φαίνεται.</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="770">οὐ δεινά; θᾶσθε τῶδε τὰς ἀπιστίας·</l>
+               <l n="771">οὔ φατι τάνδε χοῖρον εἶμεν. ἀλλὰ μάν,</l>
+               <l n="772">αἰ λῇς, περίδου μοι περὶ θυμιτιδᾶν ἁλῶν,</l>
+               <l n="773">αἰ μή ʼστιν οὗτος χοῖρος Ἑλλάνων νόμῳ.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="774" part="I">ἀλλʼ ἔστιν ἀνθρώπου γε.</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="774" part="F">ναὶ τὸν Διοκλέα</l>
+               <l n="775">ἐμά γα. τὺ δέ νιν εἴμεναι τίνος δοκεῖς;</l>
+               <l n="776" part="I">ἦ λῇς ἀκοῦσαι φθεγγομένας;</l>
+               <l n="776" part="F">νὴ τοὺς θεοὺς</l>
+               <l n="777" part="I">ἔγωγε.</l>
+               <l n="777" part="F">φώνει δὴ τὺ ταχέως χοιρίον.</l>
+               <l n="778">οὐ χρῆσθα; σιγῇς ὦ κάκιστʼ ἀπολουμένα;</l>
+               <l n="779">πάλιν τυ ἀποισῶ ναὶ τὸν Ἑρμᾶν οἴκαδις.</l>
+            </sp>
+            <sp who="#koreMegareosA">
+               <l n="780">κοῒ κοΐ.</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="781" part="I">αὕτα ʼστὶ χοῖρος;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="781" part="F">νῦν γε χοῖρος φαίνεται.</l>
+               <l n="782" part="I">ἀτὰρ ἐκτραφείς γε κύσθος ἔσται.</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="782" part="F">πέντʼ ἑτῶν,</l>
+               <l n="783">σάφʼ ἴσθι, ποττὰν ματέρʼ εἰκασθήσεται.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="784" part="I">ἀλλʼ οὐδὲ θύσιμός ἐστιν αὑτηγί.</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="784" part="F">σά μάν;</l>
+               <l n="785" part="I">πᾷ δʼ οὐχὶ θύσιμός ἐστι;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="785" part="F">κέρκον οὐκ ἔχει.</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="786">νεαρὰ γάρ ἐστιν· ἀλλὰ δελφακουμένα</l>
+               <l n="787">ἑξεῖ μεγάλαν τε καὶ παχεῖαν κἠρυθράν.</l>
+               <l n="788">ἀλλʼ αἰ τράφειν λῇς, ἅδε τοι χοῖρος καλά.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="789">ὡς ξυγγενὴς ὁ κύσθος αὐτῆς θατέρᾳ.</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="790">ὁμοματρία γάρ ἐστι κἠκ τωὐτῶ πατρός.</l>
+               <l n="791">αἰ δʼ ἂν παχυνθῇ κἀναχνοιανθῇ τριχί,</l>
+               <l n="792">κάλλιστος ἔσται χοῖρος Ἀφροδίτᾳ θύειν.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="793">ἀλλʼ οὐχὶ χοῖρος τἀφροδίτῃ θύεται.</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="794">οὐ χοῖρος Ἀφροδίτᾳ; μόνᾳ γα δαιμόνων.</l>
+               <l n="795">καὶ γίνεταί γα τᾶνδε τᾶν χοίρων τὸ κρῆς</l>
+               <l n="796">ἅδιστον ἂν τὸν ὀδελὸν ἐμπεπαρμένον.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="797">ἤδη δʼ ἄνευ τῆς μητρὸς ἐσθίοιεν ἄν;</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="798">ναὶ τὸν Ποτειδᾶν καί κʼ ἄνις γα τῶ πατρός.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="799" part="I">τί δʼ ἐσθίει μάλιστα;</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="799" part="F">πάνθʼ ἅ κα διδῷς.</l>
+               <l n="800" part="I">αὐτὸς δʼ ἐρώτη.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="800" part="M">χοῖρε χοῖρε.</l>
+            </sp>
+            <sp who="#koreMegareosA">
+               <l n="800" part="F">κοῒ κοΐ.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="801" part="I">τρώγοις ἂν ἐρεβίνθους;</l>
+            </sp>
+            <sp who="#koreMegareosA">
+               <l n="801" part="F">κοῒ κοῒ κοΐ.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="802" part="I">τί δαί; φιβάλεως ἰσχάδας;</l>
+            </sp>
+            <sp who="#koreMegareosA">
+               <l n="802" part="F">κοῒ κοΐ.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="803" part="I">τί δαὶ σύ; τρώγοις ἄν;</l>
+            </sp>
+            <sp who="#koreMegareosB">
+               <l n="803" part="F">κοῒ κοῒ κοΐ.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="804">ὡς ὀξὺ πρὸς τὰς ἰσχάδας κεκράγατε.</l>
+               <l n="805">ἐνεγκάτω τις ἔνδοθεν τῶν ἰσχάδων</l>
+               <l n="806" part="I">τοῖς χοιριδίοισιν.</l>
+            </sp>
+            <stage>
+               <move type="crossing" ana="#fetch-prop" who="#tis"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="806" part="F">ἆρα τρώξονται; βαβαί,</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="807">οἷον ῥοθιάζουσʼ ὦ πολυτίμηθʼ Ἡράκλεις.</l>
+               <l n="808">ποδαπὰ τὰ χοιρίʼ; ὡς Τραγασαῖα φαίνεται.</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="809">ἀλλʼ οὔτι πάσας κατέτραγον τὰς ἰσχάδας.</l>
+               <l n="810">ἐγὼ γὰρ αὐτᾶν τάνδε μίαν ἀνειλόμαν.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="811">νὴ τὸν Δίʼ ἀστείω γε τὼ βοσκήματε·</l>
+               <l n="812">πόσου πρίωμαί σοι τὰ χοιρίδια; λέγε.</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="813">τὸ μὲν ἅτερον τούτων σκορόδων τροπαλίδος,</l>
+               <l n="814">τὸ δʼ ἅτερον, αἰ λῇς, χοίνικος μόνας ἁλῶν.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="815" part="I">ὠνήσομαί σοι· περίμενʼ αὐτοῦ.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#dikaiopolis"/>
+            </stage>
+
+            <sp who="#megareus">
+               <l n="815" part="F">ταῦτα δή.</l>
+               <l n="816">Ἑρμᾶ ʼμπολαῖε τὰν γυναῖκα τὰν ἐμὰν</l>
+               <l n="817">οὕτω μʼ ἀποδόσθαι τάν τʼ ἐμωυτῶ τʼ ἐμωυτῶ ματέρα.</l>
+            </sp>
+            <milestone unit="middle-seq" xml:id="s020"/>
+            <!-- The entrance of the sycophant triggers the transition from s019 to
+                 s020. Dikaiopolis' return at the Megarian's cry (824) and the sycophant's expulsion (829) do not trigger new segments. -->
+            <stage>
+               <move type="entrance" who="#sykophantes"/>
+            </stage>
+
+            <sp who="#sykophantes">
+               <l n="818" part="I">ὦνθρωπε ποδαπός;</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="818" part="F">χοιροπώλας Μεγαρικός.</l>
+            </sp>
+            <sp who="#sykophantes">
+               <l n="819">τὰ χοιρίδια τοίνυν ἐγὼ φανῶ ταδὶ</l>
+               <l n="820" part="I">πολέμια καὶ σέ.</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="820" part="F">τοῦτʼ ἐκεῖνʼ, ἵκει πάλιν</l>
+               <l n="821">ὅθενπερ ἀρχὰ τῶν κακῶν ἁμῖν ἔφυ.</l>
+            </sp>
+            <sp who="#sykophantes">
+               <l n="822">κλάων μεγαριεῖς. οὐκ ἀφήσεις τὸν σάκον;</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="823">Δικαιόπολι Δικαιόπολι φαντάδδομαι.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#dikaiopolis"/>
+            </stage>
+
+            <sp who="#dikaiopolis">
+               <l n="824" part="I">ὑπὸ τοῦ; τίς ὁ φαίνων σʼ ἐστίν;</l>
+               <l n="824" part="F">ἁγορανόμοι,</l>
+               <l n="825">τοὺς συκοφάντας οὐ θύραζʼ ἐξείρξετε;</l>
+               <l n="826">τί δὴ μαθὼν φαίνεις ἄνευ θρυαλλίδος;</l>
+            </sp>
+            <sp who="#sykophantes">
+               <l n="827" part="I">οὐ γὰρ φανῶ τοὺς πολεμίους;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="827" part="F">κλάων γε σύ,</l>
+               <l n="828">εἰ μὴ ʼτέρωσε συκοφαντήσεις τρέχων.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#sykophantes"/>
+            </stage>
+
+            <sp who="#megareus">
+               <l n="829">οἷον τὸ κακὸν ἐν ταῖς Ἀθάναις τοῦτʼ ἔνι.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="830">θάρρει Μεγαρίκʼ· ἀλλʼ ἧς τὰ χοιρίδιʼ ἀπέδου</l>
+               <l n="831">τιμῆς, λαβὲ ταυτὶ τὰ σκόροδα καὶ τοὺς ἅλας,</l>
+               <l n="832" part="I">καὶ χαῖρε πόλλʼ.</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="832" part="F">ἀλλʼ ἁμὶν οὐκ ἐπιχώριον.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="833">πολυπραγμοσύνη νυν ἐς κεφαλὴν τράποιτʼ ἐμοί.</l>
+            </sp>
+            <sp who="#megareus">
+               <l n="834">ὦ χοιρίδια πειρῆσθε κἄνις τῶ πατρὸς</l>
+               <l n="835">παίειν ἐφʼ ἁλὶ τὰν μᾶδδαν, αἴκα τις διδῷ.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#megareus"/>
+               <move type="exit" who="#dikaiopolis #koreMegareosA #koreMegareosB"/>
+            </stage>
+            <milestone unit="large-seq" type="stasimon" xml:id="L06"/>
+            <milestone unit="middle-seq" xml:id="s021"/>
+            <!-- The exit of the Megarian and of Dikaiopolis triggers the transition
+                 from s020 to s021, coinciding with the large-seq start boundary L06
+                 (stasimon). -->
+            <sp who="#choros">
+               <l n="836">εὐδαιμονεῖ γʼ ἅνθρωπος. οὐκ ἤκουσας οἷ προβαίνει</l>
+               <l n="837">τὸ πρᾶγμα τοῦ βουλεύματος; καρπώσεται γὰρ ἁνὴρ</l>
+               <l n="838">ἐν τἀγορᾷ καθήμενος·</l>
+               <l n="839">κἂν εἰσίῃ τις Κτησίας</l>
+               <l n="840">ἢ συκοφάντης ἄλλος, οἰμώζων</l>
+               <l n="841">καθεδεῖται·</l>
+               <l n="842">οὐδʼ ἄλλος ἀνθρώπων ὑποψωνῶν σε πημανεῖ τι,</l>
+               <l n="843">οὐδʼ ἐξομόρξεται Πρέπις τὴν εὐρυπρωκτίαν σοι,</l>
+               <l n="844">οὐδʼ ὠστιεῖ Κλεωνύμῳ·</l>
+               <l n="845">χλαῖναν δʼ ἔχων φανὴν δίει</l>
+               <l n="846">κοὐ ξυντυχών σʼ Ὑπέρβολος</l>
+               <l n="847">δικῶν ἀναπλήσει·</l>
+               <l n="848">οὐδʼ ἐντυχὼν ἐν τἀγορᾷ πρόσεισί σοι βαδίζων</l>
+               <l n="849">Κρατῖνος ἀεὶ κεκαρμένος μοιχὸν μιᾷ μαχαίρᾳ,</l>
+               <l n="850">ὁ περιπόνηρος Ἀρτέμων,</l>
+               <l n="851">ὁ ταχὺς ἄγαν τὴν μουσικήν,</l>
+               <l n="852">ὄζων κακὸν τῶν μασχαλῶν</l>
+               <l n="853">πατρὸς Τραγασαίου·</l>
+               <l n="854">οὐδʼ αὖθις αὖ σε σκώψεται Παύσων ὁ παμπόνηρος</l>
+               <l n="855">Λυσίστρατός τʼ ἐν τἀγορᾷ, Χολαργέων ὄνειδος,</l>
+               <l n="856">ὁ περιαλουργὸς τοῖς κακοῖς,</l>
+               <l n="857">ῥιγῶν τε καὶ πεινῶν ἀεὶ</l>
+               <l n="858">πλεῖν ἢ τριάκονθʼ ἡμέρας</l>
+               <l n="859">τοῦ μηνὸς ἑκάστου.</l>
+            </sp>
+            <milestone unit="large-seq" xml:id="L07"/>
+            <milestone unit="middle-seq" xml:id="s022"/>
+            <!-- The entrance of the Boeotian with his party triggers the transition
+                 from s021 to s022, coinciding with the large-seq start boundary L07.
+                 Dikaiopolis' entrance (864), the expulsion of the pipers (867) and the fetching of the eel (889-895) do not trigger new segments. -->
+            <stage>
+               <move type="entrance" who="#boiotos #ismenichos #enchelys #auletaiThebaioi"/>
+            </stage>
+            <sp who="#boiotos">
+               <l n="860">ἴττω Ἡρακλῆς ἔκαμόν γα τὰν τύλαν κακῶς·</l>
+               <l n="861">κατάθου τὺ τὰν γλάχωνʼ ἀτρέμας Ἰσμηνία·</l>
+               <l n="862">ὑμὲς δʼ ὅσοι Θείβαθεν αὐληταὶ πάρα</l>
+               <l n="863">τοῖς ὀστίνοις φυσῆτε τὸν πρωκτὸν κυνός.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#dikaiopolis"/>
+            </stage>
+
+            <sp who="#dikaiopolis">
+               <l n="864">παῦʼ ἐς κόρακας. οἱ σφῆκες οὐκ ἀπὸ τῶν θυρῶν;</l>
+               <l n="865">πόθεν προσέπτονθʼ οἱ κακῶς ἀπολούμενοι</l>
+               <l n="866">ἐπὶ τὴν θύραν μοι Χαιριδῆς βομβαύλιοι;</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#auletaiThebaioi"/>
+            </stage>
+
+            <sp who="#boiotos">
+               <l n="867">νεὶ τὸν Ἰόλαον ἐπεχαρίττα γʼ ὦ ξένε·</l>
+               <l n="868">Θείβαθε γὰρ φυσᾶντες ἐξόπισθέ μου</l>
+               <l n="869">τἄνθια τᾶς γλάχωνος ἀπέκιξαν χαμαί.</l>
+               <l n="870">ἀλλʼ εἴ τι βούλει, πρίασο τῶν ἐγὼ φέρω</l>
+               <l n="871">τῶν ὀρταλίχων ἢ τῶν τετραπτερυλλίδων.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="872">ὦ χαῖρε κολλικοφάγε Βοιωτίδιον.</l>
+               <l n="873" part="I">τί φέρεις;</l>
+            </sp>
+            <sp who="#boiotos">
+               <l n="873" part="F">ὅσʼ ἐστὶν ἀγαθὰ Βοιωτοῖς ἁπλῶς,</l>
+               <l n="874">ὀρίγανον γλαχὼ ψιάθως θρυαλλίδας</l>
+               <l n="875">νάσσας κολοιὼς ἀτταγᾶς φαλαρίδας</l>
+               <l n="876" part="I">τροχίλως κολύμβως.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="876" part="F">ὡσπερεὶ χειμὼν ἄρα</l>
+               <l n="877">ὀρνιθίας ἐς τὴν ἀγορὰν ἐλήλυθας.</l>
+            </sp>
+            <sp who="#boiotos">
+               <l n="878">καὶ μὰν φέρω χᾶνας λαγὼς ἀλώπεκας</l>
+               <l n="879">σκάλοπας ἐχίνως αἰελούρως πικτίδας</l>
+               <l n="880">ἰκτῖδας ἐνύδρως ἐγχέλεις Κωπαΐδας.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="881">ὦ τερπνότατον σὺ τέμαχος ἀνθρώποις φέρων,</l>
+               <l n="882">δός μοι προσειπεῖν, εἰ φέρεις, τὰς ἐγχέλεις.</l>
+            </sp>
+            <sp who="#boiotos">
+               <l n="883">πρέσβειρα πεντήκοντα Κωπᾴδων κορᾶν,</l>
+               <l n="884">ἔκβαθι τῶδε κἠπιχάριτται τῷ ξένῳ.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="885">ὦ φιλτάτη σὺ καὶ πάλαι ποθουμένη,</l>
+               <l n="886">ἦλθες ποθεινὴ μὲν τρυγῳδικοῖς χοροῖς,</l>
+               <l n="887" part="I">φίλη δὲ Μορύχῳ.</l>
+               <l n="887" part="F">δμῶες ἐξενέγκατε</l>
+               <l n="888">τὴν ἐσχάραν μοι δεῦρο καὶ τὴν ῥιπίδα.</l>
+            </sp>
+            <stage>
+               <move type="entrance"
+                  who="#oiketesDikaiopolidosA #oiketaiDikaiopolidos #paidiaDikaiopolidos"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="889">σκέψασθε παῖδες τὴν ἀρίστην ἔγχελυν,</l>
+               <l n="890">ἥκουσαν ἕκτῳ μόλις ἔτει ποθουμένην·</l>
+               <l n="891">προσείπατʼ αὐτὴν ὦ τέκνʼ· ἄνθρακας δʼ ἐγὼ</l>
+               <l n="892">ὑμῖν παρέξω τῆσδε τῆς ξένης χάριν.</l>
+               <l n="893">ἀλλʼ ἔσφερʼ αὐτήν· μηδὲ γὰρ θανών ποτε</l>
+               <l n="894">σοῦ χωρὶς εἴην ἐντετευτλανωμένης.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#oiketaiDikaiopolidos #paidiaDikaiopolidos #enchelys"/>
+            </stage>
+            <sp who="#boiotos">
+               <l n="895">ἐμοὶ δὲ τιμὰ τᾶσδε πᾷ γενήσεται;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="896">ἀγορᾶς τέλος ταύτην γέ που δώσεις ἐμοί·</l>
+               <l n="897">ἀλλʼ εἴ τι πωλεῖς τῶνδε τῶν ἄλλων λέγε.</l>
+            </sp>
+            <sp who="#boiotos">
+               <l n="898" part="I">ἰώγα ταῦτα πάντα.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="898" part="F">φέρε πόσου λέγεις;</l>
+               <l n="899">ἢ φορτίʼ ἕτερʼ ἐνθένδʼ ἐκεῖσʼ ἄξεις ἰών;</l>
+            </sp>
+            <sp who="#boiotos">
+               <l n="900">ὅ τι γʼ ἔστʼ Ἀθάναις, ἐν Βοιωτοῖσιν δὲ μή.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="901">ἀφύας ἄρʼ ἄξεις πριάμενος Φαληρικὰς</l>
+               <l n="902" part="I">ἢ κέραμον.</l>
+            </sp>
+            <sp who="#boiotos">
+               <l n="902" part="F">ἀφύας ἢ κέραμον; ἀλλʼ ἔντʼ ἐκεῖ·</l>
+               <l n="903">ἀλλʼ ὅ τι παρʼ ἁμῖν μή ʼστι, τᾷδε δʼ αὖ πολύ.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="904">ἐγᾦδα τοίνυν· συκοφάντην ἔξαγε,</l>
+               <l n="905" part="I">ὥσπερ κέραμον ἐνδησάμενος.</l>
+            </sp>
+            <sp who="#boiotos">
+               <l n="905" part="F">νεὶ τὼ θιὼ</l>
+               <l n="906">λάβοιμι μέντἂν κέρδος ἀγαγὼν καὶ πολύ,</l>
+               <l n="907">ᾇπερ πίθακον ἀλιτρίας πολλᾶς πλέων.</l>
+            </sp>
+            <milestone unit="middle-seq" xml:id="s023"/>
+            <!-- The entrance of Nikarchos triggers the transition from s022 to s023;
+                 the boundary is placed before Dikaiopolis' announcement of it. -->
+            <sp who="#dikaiopolis">
+               <l n="908">καὶ μὴν ὁδὶ Νίκαρχος ἔρχεται φανῶν.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#nikarchos"/>
+            </stage>
+            <sp who="#boiotos">
+               <l n="909" part="I">μικκός γα μᾶκος οὗτος.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="909" part="F">ἀλλʼ ἅπαν κακόν.</l>
+            </sp>
+            <sp who="#nikarchos">
+               <l n="910" part="I">ταυτὶ τίνος τὰ φορτίʼ ἐστί;</l>
+            </sp>
+            <sp who="#boiotos">
+               <l n="910" part="F">τῶδʼ ἐμὰ</l>
+               <l n="911" part="I">Θείβαθεν, ἴττω Δεύς.</l>
+            </sp>
+            <sp who="#nikarchos">
+               <l n="911" part="F">ἐγὼ τοίνυν ὁδὶ</l>
+               <l n="912" part="I">φαίνω πολέμια ταῦτα.</l>
+            </sp>
+            <sp who="#boiotos">
+               <l n="912" part="F">τί δὲ κακὸν παθὼν</l>
+               <l n="913">ὀρναπετίοισι πόλεμον ἤρα καί μάχαν;</l>
+            </sp>
+            <sp who="#nikarchos">
+               <l n="914" part="I">καὶ σέ γε φανῶ πρὸς τοῖσδε.</l>
+            </sp>
+            <sp who="#boiotos">
+               <l n="914" part="F">τί ἀδικείμενος;</l>
+            </sp>
+            <sp who="#nikarchos">
+               <l n="915">ἐγὼ φράσω σοι τῶν περιεστώτων χάριν·</l>
+               <l n="916">ἐκ τῶν πολεμίων γʼ εἰσάγεις θρυαλλίδας.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="917">ἔπειτα φαίνεις δῆτα διὰ θρυαλλίδα;</l>
+            </sp>
+            <sp who="#nikarchos">
+               <l n="918">αὕτη γὰρ ἐμπρήσειεν ἂν τὸ νεώριον.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="919" part="I">νεώριον θρυαλλίς;</l>
+            </sp>
+            <sp who="#nikarchos">
+               <l n="919" part="M">οἶμαι·</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="919" part="F">τίνι τρόπῳ;</l>
+            </sp>
+            <sp who="#nikarchos">
+               <l n="920">ἐνθεὶς ἂν ἐς τίφην ἀνὴρ Βοιώτιος</l>
+               <l n="921">ἅψας ἄν ἐσπέμψειεν ἐς τὸ νεώριον</l>
+               <l n="922">διʼ ὑδρορρόας, βορέαν ἐπιτηρήσας μέγαν.</l>
+               <l n="923">κεἴπερ λάβοιτο τῶν νεῶν τὸ πῦρ ἅπαξ,</l>
+               <l n="924" part="I">σελαγοῖντʼ ἂν εὐθύς.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="924" part="F">ὦ κάκιστʼ ἀπολούμενε,</l>
+               <l n="925">σελαγοῖντʼ ἂν ὑπὸ τίφης τε καὶ θρυαλλίδος;</l>
+            </sp>
+            <sp who="#nikarchos">
+               <l n="926" part="I">μαρτύρομαι.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="926" part="F">ξυλλάμβανʼ αὐτοῦ τὸ στόμα·</l>
+               <l n="927">δός μοι φορυτόν, ἵνʼ αὐτὸν ἐνδήσας φέρω</l>
+               <l n="928">ὥσπερ κέραμον ἵνα μὴ καταγῇ φερόμενος.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="929">ἔνδησον ὦ βέλτιστε τῷ</l>
+               <l n="930" part="I">ξένῳ καλῶς τὴν ἐμπολὴν</l>
+               <l n="930" part="F">οὕτως ὅπως</l>
+               <l n="931">ἂν μὴ θέρων κατάξῃ.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="932">ἐμοὶ μελήσει ταῦτʼ, ἐπεί</l>
+               <l n="933" part="I">τοι καὶ ψοφεῖ λάλον τι καὶ</l>
+               <l n="933" part="F">πυρορραγὲς</l>
+               <l n="934">κἄλλως θεοῖσιν ἐχθρόν.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="935">τί χρήσεταί ποτʼ αὐτῷ;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="936">πάγχρηστον ἄγγος ἔσται,</l>
+               <l n="937">κρατὴρ κακῶν, τριπτὴρ δικῶν,</l>
+               <l n="938">φαίνειν ὑπευθύνους λυχνοῦχος</l>
+               <l n="939" part="I">καὶ κύλιξ—</l>
+               <l n="939" part="F">καὶ πράγματʼ ἐγκυκᾶσθαι.</l>
+            </sp>
+
+            <sp who="#choros">
+               <l n="940">πῶς δʼ ἂν πεποιθοίη τις ἀγγείῳ</l>
+               <l n="941" part="I">τοιούτῳ χρώμενος</l>
+               <l n="941" part="F">κατʼ οἰκίαν</l>
+               <l n="942">τοσόνδʼ ἀεὶ ψοφοῦντι;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="943">ἰσχυρόν ἐστιν ὦγάθʼ, ὥστʼ</l>
+               <l n="944" part="I">οὐκ ἂν καταγείη ποτʼ, εἴπερ</l>
+               <l n="944" part="F">ἐκ ποδῶν</l>
+               <l n="945">κατωκάρα κρέμαιτο.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="946">ἤδη καλῶς ἔχει σοι.</l>
+            </sp>
+            <sp who="#boiotos">
+               <l n="947">μέλλω γά τοι θερίδδειν.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="948">ἀλλʼ ὦ ξένων βέλτιστε συνθέριζε</l>
+               <l n="949">καὶ τοῦτον λαβὼν</l>
+               <l n="950">πρόσβαλλʼ ὅποι βούλει φέρων</l>
+               <l n="951">πρὸς πάντα συκοφάντην.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="952">μόλις γʼ ἐνέδησα τὸν κακῶς ἀπολούμενον.</l>
+               <l n="953">αἴρου λαβὼν τὸν κέραμον ὦ Βοιώτιε.</l>
+            </sp>
+            <sp who="#boiotos">
+               <l n="954">ὑπόκυπτε τὰν τύλαν ἰὼν Ἰσμήνιχε.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="955">χὤπως κατοίσεις αὐτὸν εὐλαβούμενος.</l>
+               <l n="956">πάντως μὲν οἴσεις οὐδὲν ὑγιές, ἀλλʼ ὅμως·</l>
+               <l n="957">κἂν τοῦτο κερδήνῃς ἄγων τὸ φορτίον,</l>
+               <l n="958">εὐδαιμονήσεις συκοφαντῶν γʼ οὕνεκα.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#boiotos #ismenichos #nikarchos"/>
+               <milestone unit="middle-seq" xml:id="s024"/>
+               <!-- The exit of the Boeotian with Nikarchos and the entrance of
+                    Lamachos' slave trigger the transition from s023 to s024; the
+                    boundary is placed inside the stage cluster, between the two moves.
+                    The slave's exit (969) does not trigger a new segment: the segment
+                    closes two verses later with the exit of Dikaiopolis and his slave. -->
+               <move type="entrance" who="#oiketesLamachou"/>
+            </stage>
+            <sp who="#oiketesLamachou">
+               <l n="959" part="I">Δικαιόπολι.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="959" part="M">τίς ἔστι; τί με βωστρεῖς;</l>
+            </sp>
+            <sp who="#oiketesLamachou">
+               <l n="959" part="F">ὅ τι;</l>
+               <l n="960">ἐκέλευε Λάμαχός σε ταυτησὶ δραχμῆς</l>
+               <l n="961">ἐς τοὺς Χοᾶς αὑτῷ μεταδοῦναι τῶν κιχλῶν,</l>
+               <l n="962">τριῶν δραχμῶν δʼ ἐκέλευε Κωπᾷδʼ ἔγχελυν.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="963">ὁ ποῖος οὗτος Λάμαχος τὴν ἔγχελυν;</l>
+            </sp>
+            <sp who="#oiketesLamachou">
+               <l n="964">ὁ δεινός, ὁ ταλαύρινος, ὃς τὴν Γοργόνα</l>
+               <l n="965">πάλλει κραδαίνων τρισὶ κατάσκιος λόφοις.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="966">οὐκ ἂν μὰ Δίʼ εἰ δοίη γέ μοι τὴν ἀσπίδα·</l>
+               <l n="967">ἀλλʼ ἐπὶ ταρίχει τοὺς λόφους κραδαινέτω·</l>
+               <l n="968">ἢν δʼ ἀπολιγαίνῃ, τοὺς ἀγορανόμους καλῶ.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#oiketesLamachou"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="969">ἐγὼ δʼ ἐμαυτῷ τόδε λαβὼν τὸ φορτίον</l>
+               <l n="970">εἴσειμʼ ὑπαὶ πτερύγων κιχλᾶν καὶ κοψίχων.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#dikaiopolis #oiketesDikaiopolidosA"/>
+            </stage>
+            <milestone unit="large-seq" type="sec-parabasis" xml:id="L08"/>
+            <milestone unit="middle-seq" xml:id="s025"/>
+            <!-- The exit of Dikaiopolis with his slave triggers the transition from
+                 s024 to s025, coinciding with the large-seq start boundary L08
+                 (second parabasis). His brief reappearance and withdrawal (986-987) do not trigger new segments. -->
+            <sp who="#choros">
+               <l n="971"> εἶδες ὦ εἶδες ὦ πᾶσα πόλι τὸν φρόνιμον ἄνδρα τὸν ὑπέρσοφον, </l>
+               <l n="973">οἷʼ ἔχει σπεισάμενος ἐμπορικὰ χρήματα διεμπολᾶν,</l>
+               <l n="975"> ὧν τὰ μὲν ἐν οἰκίᾳ χρήσιμα, τὰ δʼ αὖ πρέπει χλιαρὰ κατεσθίειν. </l>
+               <l n="976">αὐτόματα πάντʼ ἀγαθὰ τῷδέ γε πορίζεται.</l>
+               <l n="977">οὐδέποτʼ ἐγὼ Πόλεμον οἴκαδʼ ὑποδέξομαι,</l>
+               <l n="978">οὐδὲ παρʼ ἐμοί ποτε τὸν Ἁρμόδιον ᾄσεται</l>
+               <l n="979">ξυγκατακλινείς, ὅτι παροινικὸς ἀνὴρ ἔφυ,</l>
+               <l n="980">ὅστις ἐπὶ πάντʼ ἀγάθʼ ἔχοντας ἐπικωμάσας</l>
+               <l n="981">ἠργάσατο πάντα κακά, κἀνέτρεπε κἀξέχει</l>
+               <l n="982">κἀμάχετο καὶ προσέτι πολλὰ προκαλουμένου</l>
+               <l n="983">
+                  <q>πῖνε κατάκεισο λαβὲ τήνδε φιλοτησίαν</q>
+               </l>
+               <l n="984">τὰς χάρακας ἧπτε πολὺ μᾶλλον ἐν τῷ πυρί,</l>
+               <l n="985">ἐξέχει θʼ ἡμῶν βίᾳ τὸν οἶνον ἐκ τῶν ἀμπέλων.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#dikaiopolis"/>
+            </stage>
+            <sp who="#choros">
+               <l n="986">
+                  <add>οὑτοσὶ δʼ</add> ἐπτέρωταί τʼ ἐπὶ τὸ δεῖπνον ἅμα καὶ μεγάλα δὴ φρονεῖ, </l>
+            </sp>
+            <stage>
+               <move type="exit" who="#dikaiopolis"/>
+            </stage>
+            <sp who="#choros">
+               <l n="987"> τοῦ βίου δʼ ἐξέβαλε δεῖγμα <add>τάδε</add> τὰ πτερὰ πρὸ τῶν θυρῶν. </l>
+               <l n="988"> ὦ Κύπριδι τῇ καλῇ καὶ Χάρισι ταῖς φίλαις ξύντροφε Διαλλαγή, </l>
+               <l n="990">ὡς καλὸν ἔχουσα τὸ πρόσωπον ἄρʼ ἐλάνθανες.</l>
+               <l n="991">πῶς ἂν ἐμὲ καὶ σέ τις Ἔρως ξυναγάγοι λαβών,</l>
+               <l n="992">ὥσπερ ὁ γεγραμμένος ἔχων στέφανον ἀνθέμων.</l>
+               <l n="993">ἢ πάνυ γερόντιον ἴσως νενόμικάς με σύ;</l>
+               <l n="994">ἀλλά σε λαβὼν τρία δοκῶ γʼ ἂν ἔτι προσβαλεῖν·</l>
+               <l n="995">πρῶτα μὲν ἂν ἀμπελίδος ὄρχον ἐλάσαι μακρόν,</l>
+               <l n="996">εἶτα παρὰ τόνδε νέα μοσχίδια συκίδων,</l>
+               <l n="997">καὶ τὸ τρίτον ἡμερίδος ὄρχον, ὁ γέρων ὁδί,</l>
+               <l n="998">καὶ περὶ τὸ χωρίον ἐλᾷδας ἅπαν ἐν κύκλῳ,</l>
+               <l n="999">ὥστʼ ἀλείφεσθαί σʼ ἀπʼ αὐτῶν κἀμὲ ταῖς νουμηνίαις.</l>
+            </sp>
+            <milestone unit="large-seq" xml:id="L09"/>
+            <milestone unit="middle-seq" xml:id="s026"/>
+            <!-- The entrance of the Herald proclaiming the Pitcher-feast triggers
+                 the transition from s025 to s026, coinciding with the large-seq
+                 start boundary L09. His exit and the entrance of Dikaiopolis with
+                 his slaves (1003) do not trigger a new segment: Dikaiopolis'
+                 entrance is immediately motivated by the proclamation. -->
+            <stage>
+               <move type="entrance" who="#keryx"/>
+            </stage>
+            <sp who="#keryx">
+               <l n="1000">ἀκούετε λεῴ· κατὰ τὰ πάτρια τοὺς Χοᾶς</l>
+               <l n="1001">πίνειν ὑπὸ τῆς σάλπιγγος· ὃς δʼ ἂν ἐκπίῃ</l>
+               <l n="1002">πρώτιστος, ἀσκὸν Κτησιφῶντος λήψεται.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#keryx"/>
+               <move type="entrance" who="#dikaiopolis #oiketesDikaiopolidosA #oiketaiDikaiopolidos"
+               />
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="1003">ὦ παῖδες, ὦ γυναῖκες οὐκ ἠκούσατε;</l>
+               <l n="1004">τί δρᾶτε; τοῦ κήρυκος οὐκ ἀκούετε;</l>
+               <l n="1005">ἀναβράττετʼ ἐξοπτᾶτε τρέπετʼ ἀφέλκετε</l>
+               <l n="1006">τὰ λαγῷα ταχέως, τοὺς στεφάνους ἀνείρετε.</l>
+               <l n="1007">φέρε τοὺς ὀβελίσκους, ἵνʼ ἀναπείρω τὰς κίχλας.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="1008">ζηλῶ σε τῆς εὐβουλίας,</l>
+               <l n="1009">μᾶλλον δὲ τῆς εὐωχίας</l>
+               <l n="1010">ἄνθρωπε τῆς παρούσης.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1011">τί δῆτʼ ἐπειδὰν τὰς κίχλας ὀπτωμένας ἴδητε;</l>
+            </sp>
+            <sp who="#choros">
+               <l n="1012" part="I">οἶμαί σε καὶ τοῦτʼ εὖ λέγειν.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1012" part="F">τὸ πῦρ ὑποσκάλευε.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="1015">ἤκουσας ὡς μαγειρικῶς</l>
+               <l n="1016">κομψῶς τε καὶ δειπνητικῶς</l>
+               <l n="1017">αὑτῷ διακονεῖται;</l>
+            </sp>
+            <milestone unit="middle-seq" xml:id="s027"/>
+            <!-- The entrance of Derketes triggers the transition from s026 to s027.
+                 His exit (1037) does not trigger a new segment: the cooking runs on
+                 to the next arrival. -->
+            <stage>
+               <move type="entrance" who="#derketes"/>
+            </stage>
+            <sp who="#derketes">
+               <l n="1018" part="I">οἴμοι τάλας.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1018" part="F">ὦ Ἡράκλεις τίς οὑτοσί;</l>
+            </sp>
+            <sp who="#derketes">
+               <l n="1019" part="I">ἀνὴρ κακοδαίμων.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1019" part="F">κατὰ σεαυτόν νυν τρέπου.</l>
+            </sp>
+            <sp who="#derketes">
+               <l n="1020">ὦ φίλτατε, σπονδαὶ γάρ εἰσι σοὶ μόνῳ,</l>
+               <l n="1021">μέτρησον εἰρήνης τί μοι, κἂν πέντʼ ἔτη.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1022" part="I">τί δʼ ἔπαθες;</l>
+            </sp>
+            <sp who="#derketes">
+               <l n="1022" part="F">ἐπετρίβην ἀπολέσας τὼ βόε.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1023" part="I">πόθεν;</l>
+            </sp>
+            <sp who="#derketes">
+               <l n="1023" part="F">ἀπὸ Φυλῆς ἔλαβον οἱ Βοιώτιοι.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1024">ὦ τρισκακόδαιμον εἶτα λευκὸν ἀμπέχει;</l>
+            </sp>
+            <sp who="#derketes">
+               <l n="1025">καὶ ταῦτα μέντοι νὴ Δίʼ ὥπερ μʼ ἐτρεφέτην</l>
+               <l n="1026" part="I">ἐν πᾶσι βολίτοις.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1026" part="F">εἶτα νυνὶ τοῦ δέει;</l>
+            </sp>
+            <sp who="#derketes">
+               <l n="1027">ἀπόλωλα τὠφθαλμὼ δακρύων τὼ βόε.</l>
+               <l n="1028">ἀλλʼ εἴ τι κήδει Δερκέτου Φυλασίου,</l>
+               <l n="1029">ὑπάλειψον εἰρήνῃ με τὠφθαλμὼ ταχύ.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1030">ἀλλʼ ὦ πόνηρʼ οὐ δημοσιεύων τυγχάνω.</l>
+            </sp>
+            <sp who="#derketes">
+               <l n="1031">ἴθʼ ἀντιβολῶ σʼ, ἤν πως κομίσωμαι τὼ βόε.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1032">οὐκ ἔστιν, ἀλλὰ κλᾶε πρὸς τοὺς Πιττάλου.</l>
+            </sp>
+            <sp who="#derketes">
+               <l n="1033">σὺ δʼ ἀλλά μοι σταλαγμὸν εἰρήνης ἕνα</l>
+               <l n="1034">ἐς τὸν καλαμίσκον ἐνστάλαξον τουτονί.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1035">οὐδʼ ἂν στριβιλικίγξ· ἀλλʼ ἀπιὼν οἴμωζέ ποι.</l>
+            </sp>
+            <sp who="#derketes">
+               <l n="1036">οἴμοι κακοδαίμων τοῖν γεωργοῖν βοιδίοιν.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#derketes"/>
+            </stage>
+            <sp who="#choros">
+               <l n="1037">ἁνὴρ ἀνηύρηκέν τι ταῖς</l>
+               <l n="1038">σπονδαῖσιν ἡδύ, κοὐκ ἔοικεν</l>
+               <l n="1039">οὐδενὶ μεταδώσειν.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1040">κατάχει σὺ τῆς χορδῆς τὸ μέλι, τὰς σηπίας στάθευε.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="1041" part="I">ἤκουσας ὀρθιασμάτων;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1041" part="F">ὀπτᾶτε τἀγχέλεια.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="1044">ἀποκτενεῖς λιμῷ ʼμὲ καὶ</l>
+               <l n="1045">τοὺς γείτονας κνίσῃ τε καὶ</l>
+               <l n="1046">φωνῇ τοιαῦτα λάσκων.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1047">ὀπτᾶτε ταυτὶ καὶ καλῶς ξανθίζετε.</l>
+            </sp>
+            <milestone unit="middle-seq" xml:id="s028"/>
+            <!-- The entrance of the best man with the bridesmaid triggers the
+                 transition from s027 to s028; like Lamachos' slave at 959 they open by hailing Dikaiopolis by name. The segment closes with the bridesmaid's withdrawal (1067). -->
+            <stage>
+               <move type="entrance" who="#paranymphos #nympheutria"/>
+            </stage>
+            <sp who="#paranymphos">
+               <l n="1048" part="I">Δικαιόπολι.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1048" part="F">τίς οὑτοσί; τίς οὑτοσί;</l>
+            </sp>
+            <sp who="#paranymphos">
+               <l n="1049">ἔπεμψέ τίς σοι νυμφίος ταυτὶ κρέα</l>
+               <l n="1050" part="I">ἐκ τῶν γάμων.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1050" part="F">καλῶς γε ποιῶν ὅστις ἦν.</l>
+            </sp>
+            <sp who="#paranymphos">
+               <l n="1051">ἐκέλευε δʼ ἐγχέαι σε τῶν κρεῶν χάριν,</l>
+               <l n="1052">ἵνα μὴ στρατεύοιτʼ ἀλλὰ βινοίη μένων,</l>
+               <l n="1053">ἐς τὸν ἀλάβαστον κύαθον εἰρήνης ἕνα.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1054">ἀπόφερʼ ἀπόφερε τὰ κρέα καὶ μή μοι δίδου,</l>
+               <l n="1055">ὡς οὐκ ἂν ἐγχέαιμι μυρίων δραχμῶν.</l>
+               <l n="1056" part="I">ἀλλʼ αὑτηὶ τίς ἔστιν;</l>
+            </sp>
+            <sp who="#paranymphos">
+               <l n="1056" part="F">ἡ νυμφεύτρια</l>
+               <l n="1057">δεῖται παρὰ τῆς νύμφης τι σοὶ λέξαι μόνῳ.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1058">φέρε δὴ τί σὺ λέγεις; ὡς γέλοιον ὦ θεοὶ</l>
+               <l n="1059">τὸ δέημα τῆς νύμφης ὃ δεῖταί μου σφόδρα,</l>
+               <l n="1060">ὅπως ἂν οἰκουρῇ τὸ πέος τοῦ νυμφίου.</l>
+               <l n="1061">φέρε δεῦρο τὰς σπονδάς, ἵνʼ αὐτῇ δῶ μόνῃ,</l>
+               <l n="1062">ὁτιὴ γυνή ʼστι τοῦ πολέμου τʼ οὐκ αἰτία.</l>
+               <l n="1063">ὕπεχʼ ὧδε δεῦρο τοὐξάλειπτρον ὦ γύναι.</l>
+               <l n="1064">οἶσθʼ ὡς ποιεῖτε; τοῦτο τῇ νύμφῃ φράσον,</l>
+               <l n="1065">ὅταν στρατιώτας καταλέγωσι, τουτῳὶ</l>
+               <l n="1066">νύκτωρ ἀλειφέτω τὸ πέος τοῦ νυμφίου.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#paranymphos #nympheutria"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="1067">ἀπόφερε τὰς σπονδάς. φέρε τὴν οἰνήρυσιν,</l>
+               <l n="1068">ἵνʼ οἶνον ἐγχέω λαβὼν ἐς τοὺς Χοᾶς.</l>
+            </sp>
+            <milestone unit="middle-seq" xml:id="s029"/>
+            <!-- The entrance of the first messenger triggers the transition from
+                 s028 to s029; the boundary is placed before the chorus' announcement
+                 of his approach, which motivates the entrance immediately (1071).
+                 Lamachos' entrance (1072) and the messenger's exit (1078) do not trigger new segments: the lament and Dikaiopolis' mockery of it run on. -->
+            <sp who="#choros">
+               <l n="1069">καὶ μὴν ὁδί τις τὰς ὀφρῦς ἀνεσπακὼς·</l>
+               <l n="1070">ὥσπερ τι δεινὸν ἀγγελῶν ἐπείγεται.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#angelosA"/>
+            </stage>
+            <sp who="#angelosA">
+               <l n="1071">ἰὼ πόνοι τε καὶ μάχαι καὶ Λάμαχοι.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#lamachos"/>
+            </stage>
+            <sp who="#lamachos">
+               <l n="1072">τίς ἀμφὶ χαλκοφάλαρα δώματα κτυπεῖ;</l>
+            </sp>
+            <sp who="#angelosA">
+               <l n="1073">ἰέναι σʼ ἐκέλευον οἱ στρατηγοὶ τήμερον</l>
+               <l n="1074">ταχέως λαβόντα τοὺς λόχους καὶ τοὺς λόφους·</l>
+               <l n="1075">κἄπειτα τηρεῖν νειφόμενον τὰς ἐσβολάς.</l>
+               <l n="1076">ὑπὸ τοὺς Χοᾶς γὰρ καὶ Χύτρους αὐτοῖσί τις</l>
+               <l n="1077">ἤγγειλε λῃστὰς ἐμβαλεῖν Βοιωτίους.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#angelosA"/>
+            </stage>
+            <sp who="#lamachos">
+               <l n="1078">ἰὼ στρατηγοὶ πλείονες ἢ βελτίονες.</l>
+               <l n="1079">οὐ δεινὰ μὴ ʼξεῖναί με μηδʼ ἑορτάσαι;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1080">ἰὼ στράτευμα πολεμολαμαχαϊκόν.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1081">οἴμοι κακοδαίμων καταγελᾷς ἤδη σύ μου.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1082">βούλει μάχεσθαι Γηρυόνῃ τετραπτίλῳ;</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1083">αἰαῖ</l>
+               <l n="1083a">οἵαν ὁ κῆρυξ ἀγγελίαν ἤγγειλέ μοι.</l>
+            </sp>
+            <milestone unit="middle-seq" xml:id="s030"/>
+            <!-- The entrance of the second messenger triggers the transition from
+                 s029 to s030; the boundary is placed before Dikaiopolis'
+                 announcement of his approach, which motivates the entrance
+                 immediately (1085). His exit (1095), the alternating errands of the two slaves (1097-1135) and the exits and returns of Lamachos and Dikaiopolis (1139-1142) do not trigger new segments. -->
+            <sp who="#dikaiopolis">
+               <l n="1084">αἰαῖ τίνα δʼ αὖ μοι προστρέχει τις ἀγγελῶν;</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#angelosB"/>
+            </stage>
+            <sp who="#angelosB">
+               <l n="1085" part="I">Δικαιόπολι.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1085" part="M">τί ἔστιν;</l>
+            </sp>
+            <sp who="#angelosB">
+               <l n="1085" part="F">ἐπὶ δεῖπνον ταχὺ</l>
+               <l n="1086">βάδιζε τὴν κίστην λαβὼν καὶ τὸν χοᾶ.</l>
+               <l n="1087">ὁ τοῦ Διονύσου γάρ σʼ ἱερεὺς μεταπέμπεται.</l>
+               <l n="1088">ἀλλʼ ἐγκόνει· δειπνεῖν κατακωλύεις πάλαι.</l>
+               <l n="1089">τὰ δʼ ἄλλα πάντʼ ἐστὶν παρεσκευασμένα,</l>
+               <l n="1090">κλῖναι τράπεζαι προσκεφάλαια στρώματα</l>
+               <l n="1091">στέφανοι μύρον τραγήμαθʼ, αἱ πόρναι πάρα,</l>
+               <l n="1092">ἄμυλοι πλακοῦντες σησαμοῦντες ἴτρια,</l>
+               <l n="1093">ὀρχηστρίδες, τὰ φίλταθʼ Ἁρμοδίου, καλαί.</l>
+               <l n="1094" part="I">ἀλλʼ ὡς τάχιστα σπεῦδε.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#angelosB"/>
+            </stage>
+            <sp who="#lamachos">
+               <l n="1094" part="F">κακοδαίμων ἐγώ.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1095">καὶ γὰρ σὺ μεγάλην ἐπεγράφου τὴν Γοργόνα.</l>
+               <l n="1096">σύγκλῃε, καὶ δεῖπνόν τις ἐνσκευαζέτω.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#oiketesDikaiopolidosA #oiketaiDikaiopolidos"/>
+            </stage>
+            <sp who="#lamachos">
+               <l n="1097">παῖ παῖ φέρʼ ἔξω δεῦρο τὸν γυλιὸν ἐμοί.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#oiketesLamachou"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="1098">παῖ παῖ φέρʼ ἔξω δεῦρο τὴν κίστην ἐμοί.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#oiketesDikaiopolidosA"/>
+               <move type="exit" who="#oiketesLamachou"/>
+            </stage>
+            <sp who="#lamachos">
+               <l n="1099">ἅλας θυμίτας οἶσε παῖ καὶ κρόμμυα.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#oiketesLamachou"/>
+               <move type="exit" who="#oiketesDikaiopolidosA"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="1100">ἐμοὶ δὲ τεμάχη· κρομμύοις γὰρ ἄχθομαι.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#oiketesDikaiopolidosA"/>
+               <move type="exit" who="#oiketesLamachou"/>
+            </stage>
+            <sp who="#lamachos">
+               <l n="1101">θρῖον ταρίχους οἶσε δεῦρο παῖ σαπροῦ.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#oiketesLamachou"/>
+               <move type="exit" who="#oiketesDikaiopolidosA"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="1102">κἀμοὶ σὺ δημοῦ θρῖον· ὀπτήσω δʼ ἐκεῖ.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#oiketesDikaiopolidosA"/>
+               <move type="exit" who="#oiketesLamachou"/>
+            </stage>
+            <sp who="#lamachos">
+               <l n="1103">ἔνεγκε δεῦρο τὼ πτερὼ τὼ κʼ τοῦ κράνους.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#oiketesLamachou"/>
+               <move type="exit" who="#oiketesDikaiopolidosA"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="1104">ἐμοὶ δὲ τὰς φάττας γε φέρε καὶ τὰς κίχλας.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#oiketesDikaiopolidosA"/>
+               <move type="exit" who="#oiketesLamachou"/>
+            </stage>
+            <sp who="#lamachos">
+               <l n="1105">καλόν γε καὶ λευκὸν τὸ τῆς στρούθου πτερόν.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1106">καλόν γε καὶ ξανθὸν τὸ τῆς φάττης κρέας.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1107">ὦνθρωπε παῦσαι καταγελῶν μου τῶν ὅπλων.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1108">ὦνθρωπε βούλει μὴ βλέπειν ἐς τὰς κίχλας;</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1109">τὸ λοφεῖον ἐξένεγκε τῶν τριῶν λόφων.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#oiketesLamachou"/>
+               <move type="exit" who="#oiketesDikaiopolidosA"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="1110">κἀμοὶ λεκάνιον τῶν λαγῴων δὸς κρεῶν.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#oiketesDikaiopolidosA"/>
+               <move type="exit" who="#oiketesLamachou"/>
+            </stage>
+            <sp who="#lamachos">
+               <l n="1111">ἀλλʼ ἢ τριχόβρωτες τοὺς λόφους που κατέφαγον.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1112">ἀλλʼ ἤ πρὸ δείπνου τὴν μίμαρκυν κατέδομαι.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1113">ὦνθρωπε βούλει μὴ προσαγορεύειν ἐμέ;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1114">οὐκ ἀλλʼ ἐγὼ χὠ παῖς ἐρίζομεν πάλαι.</l>
+               <l n="1115">βούλει περιδόσθαι κἀπιτρέψαι Λαμάχῳ,</l>
+               <l n="1116">πότερον ἀκρίδες ἥδιόν ἐστιν ἤ κίχλαι;</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1117" part="I">οἴμʼ ὡς ὑβρίζεις.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1117" part="F">τὰς ἀκρίδας κρίνει πολύ.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1118">παῖ παῖ καθελών μοι τὸ δόρυ δεῦρʼ ἔξω φέρε.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#oiketesLamachou"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="1119">παῖ παῖ σὺ δʼ ἀφελὼν δεῦρο τὴν χορδὴν φέρε.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#oiketesDikaiopolidosA"/>
+            </stage>
+            <sp who="#lamachos">
+               <l n="1120">φέρε τοῦ δόρατος ἀφελκύσωμαι τοὔλυτρον.</l>
+               <l n="1121" part="I">ἔχʼ, ἀντέχου παῖ.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#oiketesDikaiopolidosA"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="1121" part="F">καὶ σὺ παῖ τοῦδʼ ἀντέχου.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1122">τοὺς κιλλίβαντας οἶσε παῖ τῆς ἀσπίδος.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#oiketesLamachou"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="1123">καὶ τῆς ἐμῆς τοὺς κριβανίτας ἔκφερε.</l>
+            </sp>
+            <stage>
+               
+               <move type="entrance" who="#oiketesLamachou"/>
+               <move type="exit" who="#oiketesDikaiopolidosA"/>
+            </stage>
+            <sp who="#lamachos">
+               <l n="1124">φέρε δεῦρο γοργόνωτον ἀσπίδος κύκλον.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#oiketesDikaiopolidosA"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="1125">κἀμοὶ πλακοῦντος τυρόνωτον δὸς κύκλον.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1126">ταῦτʼ οὐ κατάγελώς ἐστιν ἀνθρώποις πλατύς;</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1127">ταῦτʼ οὐ πλακοῦς δῆτʼ ἐστὶν ἀνθρώποις γλυκύς;</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1128">κατάχει σὺ παῖ τοὔλαιον. ἐν τῷ χαλκίῳ</l>
+               <l n="1129">ἐνορῶ γέροντα δειλίας φευξούμενον.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1130">κατάχει σὺ τὸ μέλι. κἀνθάδʼ ἔνδηλος γέρων</l>
+               <l n="1131">κλάειν κελεύων Λάμαχον τὸν Γοργάσου.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1132">φέρε δεῦρο παῖ θώρακα πολεμιστήριον.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#oiketesLamachou"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="1133">ἔξαιρε παῖ θώρακα κἀμοὶ τὸν χοᾶ.</l>
+            </sp>
+            <stage>
+               
+               <move type="entrance" who="#oiketesLamachou"/>
+               <move type="exit" who="#oiketesDikaiopolidosA"/>
+            </stage>
+            <sp who="#lamachos">
+               <l n="1134">ἐν τῷδε πρὸς τοὺς πολεμίους θωρήξομαι.</l>
+            </sp>
+            <stage>
+               <move type="entrance" who="#oiketesDikaiopolidosA"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="1135">ἐν τῷδε πρὸς τοὺς συμπότας θωρήξομαι.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1136">τὰ στρώματʼ ὦ παῖ δῆσον ἐκ τῆς ἀσπίδος.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1137">τὸ δεῖπνον ὦ παῖ δῆσον ἐκ τῆς κιστίδος.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1138">ἐγὼ δʼ ἐμαυτῷ τὸν γυλιὸν οἴσω λαβών.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#lamachos"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="1139">ἐγὼ δὲ θοἰμάτιον λαβὼν ἐξέρχομαι.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#dikaiopolis"/>
+               <move type="entrance" who="#lamachos"/>
+            </stage>
+            <sp who="#lamachos">
+               <l n="1140">τὴν ἀσπίδʼ αἴρου καὶ βάδιζʼ ὦ παῖ λαβών.</l>
+               <l n="1141">νείφει. βαβαιάξ· χειμέρια τὰ πράγματα.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#lamachos #oiketesLamachou"/>
+               <move type="entrance" who="#dikaiopolis"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="1142">αἴρου τὸ δεῖπνον· συμποτικὰ τὰ πράγματα.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#dikaiopolis #oiketesDikaiopolidosA"/>
+            </stage>
+            <milestone unit="large-seq" type="stasimon" xml:id="L10"/>
+            <milestone unit="middle-seq" xml:id="s031"/>
+            <!-- The exit of Dikaiopolis with his slave triggers the transition from
+                 s030 to s031, coinciding with the large-seq start boundary L10
+                 (stasimon). -->
+            <sp who="#choros">
+               <l n="1143">ἴτε δὴ χαίροντες ἐπὶ στρατιάν.</l>
+               <l n="1144">ὡς ἀνομοίαν ἔρχεσθον ὁδόν·</l>
+               <l n="1145">τῷ μὲν πίνειν στεφανωσαμένῳ,</l>
+               <l n="1146">σοὶ δὲ ῥιγῶν καὶ προφυλάττειν,</l>
+               <l n="1147">τῷ δὲ καθεύδειν</l>
+               <l n="1148">μετὰ παιδίσκης ὡραιοτάτης,</l>
+               <l n="1149">ἀνατριβομένῳ τε τὸ δεῖνα.</l>
+               <l n="1150"> Ἀντίμαχον τὸν ψακάδος †τὸν ξυγγραφῆ† τὸν μελέων ποιητήν, </l>
+               <l n="1151">ὡς μὲν ἁπλῷ, κακῶς ἐξολέσειεν ὁ Ζεύς·</l>
+               <l n="1155"> ὅς γʼ ἐμὲ τὸν τλήμονα Λήναια χορηγῶν ἀπέλυσʼ ἄδειπνον. </l>
+               <l n="1156">ὃν ἔτʼ ἐπίδοιμι τευθίδος</l>
+               <l n="1157">δεόμενον, ἡ δʼ ὠπτημένη</l>
+               <l n="1158">σίζουσα πάραλος ἐπὶ τραπέζῃ κειμένη</l>
+               <l n="1159">ὀκέλλοι· κᾆτα μέλλοντος</l>
+               <l n="1160">λαβεῖν αὐτοῦ κύων</l>
+               <l n="1161">ἁρπάσασα φεύγοι.</l>
+               <l n="1162"> τοῦτο μὲν αὐτῷ κακὸν ἕν, κᾆθʼ ἕτερον νυκτερινὸν γένοιτο. </l>
+               <l n="1165">ἠπιαλῶν γὰρ οἴκαδʼ ἐξ ἱππασίας βαδίζων,</l>
+               <l n="1166">εἶτα κατάξειέ τις αὐτοῦ μεθύων τῆς κεφαλῆς Ὀρέστης</l>
+               <l n="1167">μαινόμενος· ὁ δὲ λίθον βαλεῖν</l>
+               <l n="1168">βουλόμενος ἐν σκότῳ λάβοι</l>
+               <l n="1170">τῇ χειρὶ πέλεθον ἀρτίως κεχεσμένον·</l>
+               <l n="1171">ἐπᾴξειεν δʼ ἔχων</l>
+               <l n="1172">τὸν μάρμαρον, κἄπειθʼ ἁμαρτὼν</l>
+               <l n="1173">βάλοι Κρατῖνον.</l>
+            </sp>
+            <milestone unit="large-seq" xml:id="L11"/>
+            <milestone unit="middle-seq" xml:id="s032"/>
+            <!-- The entrance of Lamachos' slave triggers the transition from s031 to
+                 s032, coinciding with the large-seq start boundary L11. His
+                 announcement prepares immediately the entrance of the wounded
+                 Lamachos (1190), which therefore does not trigger a new segment. -->
+            <stage>
+               <move type="entrance" who="#oiketesLamachou"/>
+            </stage>
+            <sp who="#oiketesLamachou">
+               <l n="1174">ὦ δμῶες οἳ κατʼ οἶκόν ἐστε Λαμάχου,</l>
+               <l n="1175">ὕδωρ ὕδωρ ἐν χυτριδίῳ θερμαίνετε·</l>
+               <l n="1176">ὀθόνια, κηρωτὴν παρασκευάζετε,</l>
+               <l n="1177">ἔριʼ οἰσυπηρά, λαμπάδιον περὶ τὸ σφυρόν.</l>
+               <l n="1178">ἁνὴρ τέτρωται χάρακι διαπηδῶν τάφρον,</l>
+               <l n="1179">καὶ τὸ σφυρὸν παλίνορρον ἐξεκόκκισεν,</l>
+               <l n="1180">καὶ τῆς κεφαλῆς κατέαγε περὶ λίθῳ πεσών,</l>
+               <l n="1181">καὶ Γοργόνʼ ἐξήγειρεν ἐκ τῆς ἀσπίδος.</l>
+               <l n="1182">πτίλον δὲ τὸ μέγα κομπολακύθου πεσὸν</l>
+               <l n="1183">πρὸς ταῖς πέτραισι, δεινὸν ἐξηύδα μέλος·</l>
+               <l n="1184">
+                  <q>ὦ κλεινὸν ὄμμα νῦν πανύστατόν σʼ ἰδὼν</q>
+               </l>
+               <l n="1185">
+                  <q rend="merge">λείπω φάος γε τοὐμόν, οὐκέτʼ εἰμʼ ἐγώ.</q>
+               </l>
+               <l n="1186">τοσαῦτα λέξας εἰς ὑδρορρόαν πεσὼν</l>
+               <l n="1187">ἀνίσταταί τε καὶ ξυναντᾷ δραπέταις</l>
+               <l n="1188">λῃστὰς ἐλαύνων καὶ κατασπέρχων δορί.</l>
+               <l n="1189">ὁδὶ δὲ καὐτός· ἀλλʼ ἄνοιγε τὴν θύραν.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#oiketesLamachou"/>
+               <move type="entrance" who="#lamachos #lochitaiLamachou"/>
+            </stage>
+            <sp who="#lamachos">
+               <l n="1190">ἀτταταῖ ἀτταταῖ</l>
+               <l n="1193">στυγερὰ τάδε γε κρυερὰ πάθεα· τάλας ἐγώ.</l>
+               <l n="1194">διόλλυμαι δορὸς ὑπὸ πολεμίου τυπείς.</l>
+               <l n="1195">ἐκεῖνο δʼ οὖν αἰακτὸν ἂν γένοιτο,</l>
+               <l n="1196">Δικαιόπολις εἴ μʼ ἴδοι τετρωμένον</l>
+               <l n="1197">κᾆτʼ ἐγχάνοι ταῖς ἐμαῖς τύχαισιν.</l>
+            </sp>
+            <milestone unit="middle-seq" xml:id="s033"/>
+            <!-- The entrance of Dikaiopolis with the two dancing-girls triggers the
+                 transition from s032 to s033. Lamachos' fear of being seen by him
+                 (1196) is anticipation, not preparation, and does not draw the
+                 boundary earlier. -->
+            <stage>
+               <move type="entrance" who="#dikaiopolis #orchestrisA #orchestrisB"/>
+            </stage>
+            <sp who="#dikaiopolis">
+               <l n="1198">ἀτταταῖ ἀτταταῖ</l>
+               <l n="1199">τῶν τιτθίων, ὡς σκληρὰ καὶ κυδώνια.</l>
+               <l n="1200">φιλήσατόν με μαλθακῶς ὦ χρυσίω</l>
+               <l n="1201">τὸ περιπεταστὸν κἀπιμανδαλωτόν.</l>
+               <l n="1202">
+                  <gap reason="lost"/>
+               </l>
+               <l n="1203">τὸν γὰρ χοᾶ πρῶτος ἐκπέπωκα.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1204">ὦ συμφορὰ τάλαινα τῶν ἐμῶν κακῶν.</l>
+               <l n="1205">ἰὼ ἰὼ τραυμάτων ἐπωδύνων.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1206">
+                  <gap reason="lost"/>
+               </l>
+               <l n="1207">ἰὴ ἰὴ χαῖρε Λαμαχίππιον.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1208" part="I">στυγερὸς ἐγώ.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1208" part="F">τί με σὺ κυνεῖς;</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1209" part="I">μογερὸς ἐγώ.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1209" part="F">τί με σὺ δάκνεις;</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1210">τάλας ἐγὼ ξυμβολῆς βαρείας.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1211">τοῖς Χουσὶ γάρ τις ξυμβολὰς ἐπράττετο;</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1212">ἰὼ ἰὼ Παιὰν Παιάν.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1213">ἀλλʼ οὐχὶ νυνὶ τήμερον Παιώνια.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1214">λάβεσθέ μου λάβεσθε τοῦ σκέλους παπαῖ,</l>
+               <l n="1215">προσλάβεσθʼ ὦ φίλοι.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1216">ἐμοῦ δέ γε σφὼ τοῦ πέους ἄμφω μέσου</l>
+               <l n="1217">προσλάβεσθʼ ὦ φίλαι.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1218">εἰλιγγιῶ κάρα λίθῳ πεπληγμένος</l>
+               <l n="1219">καὶ σκοτοδινιῶ.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1220">κἀγὼ καθεύδειν βούλομαι καὶ στύομαι</l>
+               <l n="1221">καὶ σκοτοβινιῶ</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1222">θύραζέ μʼ ἐξενέγκατʼ ἐς τοῦ Πιττάλου</l>
+               <l n="1223">παιωνίαισι χερσίν.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1224">ὡς τοὺς κριτάς με φέρετε· ποῦ ʼστιν ὁ βασιλεύς;</l>
+               <l n="1225">ἀπόδοτέ μοι τὸν ἀσκόν.</l>
+            </sp>
+            <sp who="#lamachos">
+               <l n="1226">λόγχη τις ἐμπέπηγέ μοι διʼ ὀστέων ὀδυρτά.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#lamachos #lochitaiLamachou"/>
+            </stage>
+            <milestone unit="middle-seq" xml:id="s034"/>
+            <!-- The exit of Lamachos triggers the transition from s033 to s034; the
+                 boundary is placed after his exit, which closes s033. -->
+            <sp who="#dikaiopolis">
+               <l n="1227">ὁρᾶτε τουτονὶ κενόν. τήνελλα καλλίνικος.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="1228"> τήνελλα δῆτʼ, εἴπερ καλεῖς γʼ, ὦ πρέσβυ, καλλίνικος. </l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1229">καὶ πρός γʼ ἄκρατον ἐγχέας ἄμυστιν ἐξέλαψα.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="1230">τήνελλά νυν ὦ γεννάδα· χώρει λαβὼν τὸν ἀσκόν.</l>
+            </sp>
+            <sp who="#dikaiopolis">
+               <l n="1231">ἕπεσθέ νυν ᾄδοντες ὦ τήνελλα καλλίνικος.</l>
+            </sp>
+            <sp who="#choros">
+               <l n="1232">ἀλλʼ ἑψόμεσθα σὴν χάριν</l>
+               <l n="1233">τήνελλα καλλίνικος ᾄδοντες</l>
+               <l n="1234">σὲ καὶ τὸν ἀσκόν.</l>
+            </sp>
+            <stage>
+               <move type="exit" who="#dikaiopolis #choros #orchestrisA #orchestrisB"/>
+            </stage>
+            <stage>
+               <move type="onStage"/>
+            </stage>
+         </div>
+      </body>
+   </text>
+</TEI>
